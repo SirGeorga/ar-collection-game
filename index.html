@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebXR AR Collection Game</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        #counter {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 24px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="counter">Objects Collected: 0</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer;
+        let cubes = [];
+        let counter = 0;
+
+        // Initialize the scene
+        function init() {
+            // Create the scene and a camera
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.6, 0); // Set the camera to head height
+
+            // Create a renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            // Add a light to the scene
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+            light.position.set(0.5, 1, 0.25);
+            scene.add(light);
+
+            // Add WebXR Button for AR session
+            document.body.appendChild(THREE.XRUtils.createButton(renderer));
+
+            // Add random cubes
+            for (let i = 0; i < 10; i++) {
+                let cube = createRandomCube();
+                scene.add(cube);
+                cubes.push(cube);
+            }
+
+            // Start rendering the scene
+            renderer.setAnimationLoop(render);
+        }
+
+        // Function to create random cubes
+        function createRandomCube() {
+            let geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            let material = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
+            let cube = new THREE.Mesh(geometry, material);
+
+            // Set random position for the cube
+            cube.position.set(
+                (Math.random() - 0.5) * 4,
+                Math.random() * 2 + 0.5,
+                (Math.random() - 0.5) * 4
+            );
+
+            return cube;
+        }
+
+        // Function to check collision
+        function checkCollision() {
+            cubes.forEach((cube, index) => {
+                let distance = cube.position.distanceTo(camera.position);
+                if (distance < 0.5) { // If the user is close enough to the cube
+                    scene.remove(cube); // Remove the cube from the scene
+                    cubes.splice(index, 1); // Remove the cube from the array
+                    counter++; // Increment the counter
+                    document.getElementById('counter').innerText = `Objects Collected: ${counter}`;
+                }
+            });
+        }
+
+        // Render loop
+        function render() {
+            checkCollision(); // Check for collisions every frame
+            renderer.render(scene, camera);
+        }
+
+        // Start the application
+        init();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
