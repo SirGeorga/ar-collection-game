@@ -27,6 +27,7 @@
         let camera, scene, renderer;
         let cubes = [];
         let score = 0;
+        let time = 0;  // Добавим счетчик времени для анимации
 
         init();
 
@@ -95,10 +96,13 @@
             camera.getWorldPosition(cameraPosition);
 
             cube.position.set(
-                cameraPosition.x + (Math.random() - 0.5) * 4,  // x
+                cameraPosition.x + (Math.random() - 0.5) * 2,  // x
                 cameraPosition.y + Math.random() * 0.5 - 0.25,  // y (от -0.25 до 0.25 относительно камеры)
-                cameraPosition.z + (Math.random() - 0.5) * 4   // z
+                cameraPosition.z + (Math.random() - 0.5) * 2   // z
             );
+
+            // Запоминаем начальную позицию куба по оси Y
+            cube.initialY = cube.position.y;
 
             scene.add(cube);
             cubes.push(cube);
@@ -126,6 +130,12 @@
         }
 
         function render() {
+            time += 0.01;  // Увеличиваем время для анимации
+            cubes.forEach(cube => {
+                //cube.rotation.x += 0.01;  // Вращение вокруг оси X
+                cube.rotation.y += 0.01;  // Вращение вокруг оси Y
+                cube.position.y = cube.initialY + Math.sin(time) * 0.05;  // Кубы поднимаются и опускаются на 0.05 единицы
+            });
             checkCubeCollection();
             renderer.render(scene, camera);
         }
