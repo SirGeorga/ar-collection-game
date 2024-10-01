@@ -69,8 +69,8 @@
             const loader = new THREE.GLTFLoader();
             loader.load(
                 './models/TPU-Coin-RAW.glb',  // Измените на путь к вашей модели
-                function (gltf) {
-                    model = gltf.scene;
+                function (glb) {
+                    model = glb.scene;
                     model.scale.set(1, 1, 1);  // Масштабируем модель, чтобы она была подходящего размера
                     createObject();
                     setInterval(createObject, 5000);  // Создавать новый объект каждые 5 секунд
