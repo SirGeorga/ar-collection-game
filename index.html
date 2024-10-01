@@ -26,8 +26,10 @@
     <script>
         let camera, scene, renderer;
         let cubes = [];
+        let objects = [];
         let score = 0;
         let time = 0;  // Добавим счетчик времени для анимации
+        let model;  // Добавим модель
 
         init();
 
@@ -62,6 +64,20 @@
             };
 
             window.addEventListener('resize', onWindowResize, false);
+
+            // Загрузка 3D модели
+            const loader = new THREE.GLTFLoader();
+            loader.load(
+                './models/TPU-Coin-RAW.glb',  // Измените на путь к вашей модели
+                function (gltf) {
+                    model = gltf.scene;
+                    model.scale.set(0.01, 0.01, 0.01);  // Масштабируем модель, чтобы она была подходящего размера
+                },
+                undefined,
+                function (error) {
+                    console.error('An error happened', error);
+                }
+            );
         }
 
         function onSessionStarted(session) {
@@ -70,7 +86,8 @@
 
             session.addEventListener('end', onSessionEnded);
 
-            createCube();
+            createObject();
+            //createCube();
             //createInitialCubes();
             //setInterval(createCube, 5000);  // Создавать новый куб каждые 5 секунд
 
@@ -81,12 +98,35 @@
             renderer.setAnimationLoop(null);
         }
 
+        /*
         function createInitialCubes() {
             for (let i = 0; i < 10; i++) {
                 createCube();
             }
+        }*/
+
+        function createObject() {
+            if (!model) return;  // Если модель ещё не загружена, не создаём объект
+
+            const object = model.clone();
+
+            const cameraPosition = new THREE.Vector3();
+            camera.getWorldPosition(cameraPosition);
+
+            object.position.set(
+                cameraPosition.x + (Math.random() - 0.5) * 2,  // x
+                cameraPosition.y + Math.random() * 0.5 - 0.25,  // y (от -0.25 до 0.25 относительно камеры)
+                cameraPosition.z + (Math.random() - 0.5) * 2   // z
+            );
+
+            // Запоминаем начальную позицию куба по оси Y
+            object.initialY = object.position.y;
+
+            scene.add(object);
+            objects.push(object);
         }
 
+        /*
         function createCube() {
             const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
             const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
@@ -115,13 +155,34 @@
             cubes.forEach((cube, index) => {
                 if (cube.position.distanceTo(cameraPosition) < 0.2) {
                     scene.remove(cube);
-                    cubes.splice(index, 1);
+                    object.splice(index, 1);
+//                    cubes.splice(index, 1);
                     score++;
                     document.getElementById('score').textContent = score;
-                    createCube();  // Создаем новый куб взамен собранного
+//                    createCube();  // Создаем новый куб взамен собранного
+                    createObject();  // Создаем новый куб взамен собранного
+                }
+            });
+        }*/
+
+        
+        function checkCubeCollection() {
+            const cameraPosition = new THREE.Vector3();
+            camera.getWorldPosition(cameraPosition);
+
+            objects.forEach((object, index) => {
+                if (object.position.distanceTo(cameraPosition) < 0.2) {
+                    scene.remove(object);
+                    object.splice(index, 1);
+//                    cubes.splice(index, 1);
+                    score++;
+                    document.getElementById('score').textContent = score;
+//                    createCube();  // Создаем новый куб взамен собранного
+                    createObject();  // Создаем новый куб взамен собранного
                 }
             });
         }
+
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -130,15 +191,25 @@
         }
 
         function render() {
-            time += 0.04;  // Увеличиваем время для анимации
+            time += 0.06;  // Увеличиваем время для анимации
+            objects.forEach(object => {
+                object.rotation.y += 0.04;  // Вращение вокруг оси Y
+                object.position.y = object.initialY + Math.sin(time) * 0.05;  // Кубы поднимаются и опускаются на 0.05 единицы
+            });
+            checkCubeCollection();
+            renderer.render(scene, camera);
+        }
+
+        /*
+        function render() {
+            time += 0.06;  // Увеличиваем время для анимации
             cubes.forEach(cube => {
-                //cube.rotation.x += 0.01;  // Вращение вокруг оси X
                 cube.rotation.y += 0.04;  // Вращение вокруг оси Y
                 cube.position.y = cube.initialY + Math.sin(time) * 0.05;  // Кубы поднимаются и опускаются на 0.05 единицы
             });
             checkCubeCollection();
             renderer.render(scene, camera);
-        }
+        }*/
     </script>
 </body>
 </html>
