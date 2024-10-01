@@ -71,7 +71,9 @@
                 './models/TPU-Coin-RAW.glb',  // Измените на путь к вашей модели
                 function (gltf) {
                     model = gltf.scene;
-                    model.scale.set(0.01, 0.01, 0.01);  // Масштабируем модель, чтобы она была подходящего размера
+                    model.scale.set(1, 1, 1);  // Масштабируем модель, чтобы она была подходящего размера
+                    createObject();
+                    setInterval(createObject, 5000);  // Создавать новый объект каждые 5 секунд
                 },
                 undefined,
                 function (error) {
