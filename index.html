@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebXR AR Collection Game</title>
+    <title>WebXR AR Collection Game with Swipe Camera Rotation</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
@@ -24,6 +24,10 @@
         let scene, camera, renderer;
         let cubes = [];
         let counter = 0;
+
+        // Для хранения данных о касаниях
+        let touchStartX = 0;
+        let touchEndX = 0;
 
         // Initialize the scene
         function init() {
@@ -70,6 +74,30 @@
 
             // Start rendering the scene
             renderer.setAnimationLoop(render);
+
+            // Добавление обработчиков касания
+            window.addEventListener('touchstart', onTouchStart, false);
+            window.addEventListener('touchmove', onTouchMove, false);
+        }
+
+        // Функция для обработки начала касания
+        function onTouchStart(event) {
+            touchStartX = event.touches[0].clientX; // Запоминаем начальную точку касания
+        }
+
+        // Функция для обработки перемещения касания
+        function onTouchMove(event) {
+            touchEndX = event.touches[0].clientX; // Запоминаем текущую позицию
+            let deltaX = touchEndX - touchStartX; // Разница между началом и текущей позицией свайпа
+
+            // Чувствительность вращения
+            const sensitivity = 0.005; 
+
+            // Вращаем камеру вокруг оси Y в зависимости от величины свайпа
+            camera.rotation.y -= deltaX * sensitivity;
+
+            // Обновляем точку начала для последующего свайпа
+            touchStartX = touchEndX;
         }
 
         // Function to create random cubes
