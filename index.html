@@ -103,7 +103,14 @@
 
         // Function to start the AR session
         function onSessionStarted(session) {
+            if (navigator.xr) {
+                console.log('WebXR is supported');
+            } else {
+                alert('WebXR is not supported on this device');
+            }
+            session.addEventListener('end', () => console.log('AR session ended'));
             renderer.xr.setSession(session);
+            console.log('AR session started');
         }
 
         // Render loop
