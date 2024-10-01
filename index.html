@@ -43,8 +43,23 @@
             light.position.set(0.5, 1, 0.25);
             scene.add(light);
 
-            // Add WebXR Button for AR session
-            document.body.appendChild(THREE.XRUtils.createButton(renderer));
+            // Add AR Button for WebXR session
+            const arButton = document.createElement('button');
+            arButton.style.position = 'absolute';
+            arButton.style.bottom = '20px';
+            arButton.style.left = '50%';
+            arButton.style.transform = 'translateX(-50%)';
+            arButton.style.padding = '10px 20px';
+            arButton.style.fontSize = '16px';
+            arButton.style.cursor = 'pointer';
+            arButton.innerHTML = 'Enter AR';
+            document.body.appendChild(arButton);
+
+            arButton.addEventListener('click', () => {
+                renderer.xr.setSession(renderer.xr.getSession() === null ? navigator.xr.requestSession('immersive-ar', {
+                    requiredFeatures: ['hit-test']
+                }).then(onSessionStarted) : renderer.xr.getSession().end());
+            });
 
             // Add random cubes
             for (let i = 0; i < 10; i++) {
@@ -84,6 +99,11 @@
                     document.getElementById('counter').innerText = `Objects Collected: ${counter}`;
                 }
             });
+        }
+
+        // Function to start the AR session
+        function onSessionStarted(session) {
+            renderer.xr.setSession(session);
         }
 
         // Render loop
