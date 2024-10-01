@@ -1,165 +1,130 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebXR AR Collection Game with Swipe Camera Rotation</title>
+    <title>AR Cube Collector - Physical Movement</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; }
-        canvas { display: block; }
-        #counter {
+        #info {
             position: absolute;
             top: 10px;
-            left: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display: block;
             color: white;
-            font-size: 24px;
-            z-index: 10;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            text-shadow: 0 0 3px black;
         }
     </style>
 </head>
 <body>
-    <div id="counter">Objects Collected: 0</div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <div id="info">Собрано кубов: <span id="score">0</span></div>
     <script>
-        let scene, camera, renderer;
+        let camera, scene, renderer;
         let cubes = [];
-        let counter = 0;
-        let xrHitTestSource = null;
-        let xrHitTestSourceRequested = false;
+        let score = 0;
 
-        // Для хранения данных о касаниях
-        let touchStartX = 0;
-        let touchEndX = 0;
+        init();
 
-        // Initialize the scene
         function init() {
-            // Create the scene and a camera
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 1.6, 0); // Set the camera to head height
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // Create a renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            // Add a light to the scene
             const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-            light.position.set(0.5, 1, 0.25);
             scene.add(light);
 
-            // Add AR Button for WebXR session
-            const arButton = document.createElement('button');
-            arButton.style.position = 'absolute';
-            arButton.style.bottom = '20px';
-            arButton.style.left = '50%';
-            arButton.style.transform = 'translateX(-50%)';
-            arButton.style.padding = '10px 20px';
-            arButton.style.fontSize = '16px';
-            arButton.style.cursor = 'pointer';
-            arButton.innerHTML = 'Enter AR';
-            document.body.appendChild(arButton);
+            const button = document.createElement('button');
+            button.textContent = 'ЗАПУСТИТЬ AR';
+            button.style.position = 'absolute';
+            button.style.bottom = '20px';
+            button.style.left = '50%';
+            button.style.transform = 'translateX(-50%)';
+            button.style.padding = '12px 24px';
+            button.style.fontSize = '18px';
+            document.body.appendChild(button);
 
-            arButton.addEventListener('click', () => {
-                renderer.xr.setSession(renderer.xr.getSession() === null ? navigator.xr.requestSession('immersive-ar', {
-                    requiredFeatures: ['hit-test']
-                }).then(onSessionStarted) : renderer.xr.getSession().end());
-            });
+            button.onclick = () => {
+                navigator.xr.requestSession('immersive-ar', {
+                    requiredFeatures: ['hit-test'],
+                    optionalFeatures: ['dom-overlay'],
+                    domOverlay: { root: document.body }
+                }).then(onSessionStarted);
+            };
 
-            // Start rendering the scene
-            renderer.setAnimationLoop(render);
-
-            // Добавление обработчиков касания
-            window.addEventListener('touchstart', onTouchStart, false);
-            window.addEventListener('touchmove', onTouchMove, false);
+            window.addEventListener('resize', onWindowResize, false);
         }
 
-        // Функция для обработки начала касания
-        function onTouchStart(event) {
-            touchStartX = event.touches[0].clientX; // Запоминаем начальную точку касания
-        }
-
-        // Функция для обработки перемещения касания
-        function onTouchMove(event) {
-            touchEndX = event.touches[0].clientX; // Запоминаем текущую позицию
-            let deltaX = touchEndX - touchStartX; // Разница между началом и текущей позицией свайпа
-
-            // Чувствительность вращения
-            const sensitivity = 0.005; 
-
-            // Вращаем камеру вокруг оси Y в зависимости от величины свайпа
-            camera.rotation.y -= deltaX * sensitivity;
-
-            // Обновляем точку начала для последующего свайпа
-            touchStartX = touchEndX;
-        }
-
-        // Function to create a random cube
-        function createRandomCube() {
-            const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-            const material = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
-            const cube = new THREE.Mesh(geometry, material);
-            return cube;
-        }
-
-        // Function to start the AR session
         function onSessionStarted(session) {
             renderer.xr.setSession(session);
+            renderer.xr.setReferenceSpaceType('local');
 
-            const viewerSpace = renderer.xr.getReferenceSpace();
-            session.requestReferenceSpace('viewer').then((referenceSpace) => {
-                session.requestHitTestSource({ space: referenceSpace }).then((source) => {
-                    xrHitTestSource = source;
-                });
-            });
+            session.addEventListener('end', onSessionEnded);
 
-            session.addEventListener('end', () => {
-                xrHitTestSourceRequested = false;
-                xrHitTestSource = null;
-            });
+            createInitialCubes();
+            setInterval(createCube, 5000);  // Создавать новый куб каждые 5 секунд
+
+            renderer.setAnimationLoop(render);
         }
 
-        // Render loop
-        function render(timestamp, frame) {
-            if (frame) {
-                const referenceSpace = renderer.xr.getReferenceSpace();
-                const session = renderer.xr.getSession();
+        function onSessionEnded() {
+            renderer.setAnimationLoop(null);
+        }
 
-                if (xrHitTestSource) {
-                    const hitTestResults = frame.getHitTestResults(xrHitTestSource);
-
-                    if (hitTestResults.length > 0) {
-                        const hit = hitTestResults[0];
-
-                        // Создаём куб при первом успешном хит-тесте
-                        if (cubes.length === 0) {
-                            const cube = createRandomCube();
-                            scene.add(cube);
-                            cubes.push(cube);
-                        }
-
-                        const pose = hit.getPose(referenceSpace);
-                        const cube = cubes[0]; // Берём первый куб для теста
-
-                        // Привязываем куб к месту хит-теста
-                        cube.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
-                    }
-                }
+        function createInitialCubes() {
+            for (let i = 0; i < 10; i++) {
+                createCube();
             }
-
-            renderer.render(scene, camera);
         }
 
-        // Start the application
-        init();
+        function createCube() {
+            const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
+            const cube = new THREE.Mesh(geometry, material);
 
-        // Handle window resize
-        window.addEventListener('resize', () => {
+            cube.position.set(
+                (Math.random() - 0.5) * 4,  // x
+                1.2 + Math.random() * 0.5,  // y (примерно на уровне головы)
+                (Math.random() - 0.5) * 4   // z
+            );
+
+            scene.add(cube);
+            cubes.push(cube);
+        }
+
+        function checkCubeCollection() {
+            const cameraPosition = new THREE.Vector3();
+            camera.getWorldPosition(cameraPosition);
+
+            cubes.forEach((cube, index) => {
+                if (cube.position.distanceTo(cameraPosition) < 0.2) {
+                    scene.remove(cube);
+                    cubes.splice(index, 1);
+                    score++;
+                    document.getElementById('score').textContent = score;
+                    createCube();  // Создаем новый куб взамен собранного
+                }
+            });
+        }
+
+        function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        }
+
+        function render() {
+            checkCubeCollection();
+            renderer.render(scene, camera);
+        }
     </script>
 </body>
 </html>
