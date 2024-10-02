@@ -111,8 +111,8 @@
                 // Настраиваем материал модели для лучшего отражения света
                 glbModel.traverse((child) => {
                     if (child.isMesh) {
-                        child.material.metalness = 0.4;
-                        child.material.roughness = 0.2;
+                        child.material.metalness = 0;
+                        child.material.roughness = 0;
                     }
                 });
             });
@@ -183,6 +183,28 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
+        function checkObjectVisibility() {
+            const cameraDirection = new THREE.Vector3();
+            camera.getWorldDirection(cameraDirection);  // Получаем направление камеры
+
+            objects.forEach((object) => {
+                const objectDirection = new THREE.Vector3();
+                object.getWorldPosition(objectDirection);  // Позиция объекта относительно сцены
+
+                // Направление от камеры к объекту
+                objectDirection.sub(camera.position).normalize();
+
+                // Проверяем, насколько направление на объект отклонено от взгляда камеры
+                const dotProduct = cameraDirection.dot(objectDirection);  // Если это значение близко к 1, объект перед камерой
+
+                if (dotProduct < 0.5) {  // Если объект не в поле зрения (коэффициент меньше 0.5)
+                    document.body.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';  // Подсветка экрана красным
+                } else {
+                    document.body.style.backgroundColor = 'transparent';  // Убираем подсветку
+                }
+            });
+        }
+
         function render() {
             time += 0.06;
             objects.forEach(object => {
@@ -190,6 +212,7 @@
                 object.position.y = object.initialY + Math.sin(time) * 0.05;
             });
             checkObjectCollection();
+            checkObjectVisibility();
             renderer.render(scene, camera);
         }
     </script>
