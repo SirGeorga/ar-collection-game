@@ -29,7 +29,7 @@
             z-index: 1000;
         }
         #startButton {
-            padding: 15px 30px;
+            padding: 30px;
             font-size: 24px;
             cursor: pointer;
             background-color: rgb(76, 175, 80);
@@ -42,7 +42,7 @@
             background-color: #45a049;
         }
         #storeButton {
-            padding: 15px 30px;
+            padding: 30px;
             font-size: 24px;
             cursor: pointer;
             background-color: rgb(76, 175, 80);
@@ -70,7 +70,7 @@
 </head>
 <body>
     <div id="startScreen">
-        <h5 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собрано PolyCoins: <span id="score">0</span></h1>
+        <h3 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собрано PolyCoins: <span id="score">0</span></h1>
         <img src="./sources/LOGO.png" alt="Image" style="max-width: 100px; margin-bottom: 100px;">
         <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собери свои PolyCoins</h1>
         <button id="startButton">ЗАПУСТИТЬ AR</button>
@@ -112,15 +112,12 @@
             document.body.appendChild(button);
 
             document.getElementById('startButton').addEventListener('click', () => {
-                if (button.textContent === 'ЗАПУСТИТЬ AR') {
-                    navigator.xr.requestSession('immersive-ar', {
-                        requiredFeatures: ['hit-test'],
-                        optionalFeatures: ['dom-overlay'],
-                        domOverlay: { root: document.body }
-                    }).then(onSessionStarted);
-                } else {
-                    endSession(); // Завершение сессии по клику на "Завершить игру"
-                }
+
+                navigator.xr.requestSession('immersive-ar', {
+                    requiredFeatures: ['hit-test'],
+                    optionalFeatures: ['dom-overlay'],
+                    domOverlay: { root: document.body }
+                }).then(onSessionStarted);
             });
 
             document.getElementById('arButton').addEventListener('click', () => {
