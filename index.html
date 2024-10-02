@@ -169,6 +169,7 @@
 
         function onSessionStarted(session) {
             score = 0;
+            document.getElementById('currentScore').textContent = score; // Отображаем текущий счет
             renderer.xr.setSession(session);
             renderer.xr.setReferenceSpaceType('local');
 
@@ -193,7 +194,7 @@
 
             // Показываем начальный экран и текущий счет
             document.getElementById('startScreen').style.display = 'flex';
-            document.getElementById('globalScore').textContent = globalScore + score; // Отображаем текущий счет
+            document.getElementById('globalScore').textContent = globalScore + score; // Отображаем глобальный счет
             document.getElementById('info').style.display = 'none'; // Скрываем элемент информации
         }
 
