@@ -124,7 +124,7 @@
             const screenHighlight = document.createElement('div');
             screenHighlight.id = 'screenHighlight';
             screenHighlight.style.position = 'absolute';
-            screenHighlight.style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
+            screenHighlight.style.backgroundColor = '#4caf50';
             screenHighlight.style.pointerEvents = 'none';
             screenHighlight.style.display = 'none';
             document.body.appendChild(screenHighlight);
@@ -248,7 +248,7 @@
                     highlight.style.width = '10px';
                     highlight.style.height = '100%';
                     highlight.style.left = 'auto';
-                } else if (y < -1 + padding) {
+                } else if (y > -1 + padding) {
                     // Верхний край
                     highlight.style.top = '0';
                     highlight.style.left = '0';
@@ -256,7 +256,7 @@
                     highlight.style.height = '10px';
                     highlight.style.width = '100%';
                     highlight.style.bottom = 'auto';
-                } else if (y > 1 - padding) {
+                } else if (y < 1 - padding) {
                     // Нижний край
                     highlight.style.bottom = '0';
                     highlight.style.left = '0';
