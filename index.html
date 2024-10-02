@@ -43,7 +43,7 @@
         }
         #info {
             position: absolute;
-            top: 10px;
+            top: 30px;
             width: 100%;
             text-align: center;
             z-index: 100;
@@ -61,7 +61,7 @@
         <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собери свои PolyCoins</h1>
         <button id="startButton">ЗАПУСТИТЬ AR</button>
     </div>
-    <div id="info">Собрано ТПУ-Coins: <span id="score">0</span></div>
+    <div id="info">Собрано PolyCoins: <span id="score">0</span></div>
     <script>
         let camera, scene, renderer;
         let cubes = [];
@@ -86,6 +86,7 @@
             scene.add(light);
 
             const button = document.createElement('button');
+            button.id = 'arButton'; // Добавляем ID кнопке для управления
             button.textContent = 'ЗАПУСТИТЬ AR';
             button.style.position = 'absolute';
             button.style.bottom = '20px';
@@ -96,11 +97,15 @@
             document.body.appendChild(button);
 
             document.getElementById('startButton').addEventListener('click', () => {
-                navigator.xr.requestSession('immersive-ar', {
-                    requiredFeatures: ['hit-test'],
-                    optionalFeatures: ['dom-overlay'],
-                    domOverlay: { root: document.body }
-                }).then(onSessionStarted);
+                if (button.textContent === 'ЗАПУСТИТЬ AR') {
+                    navigator.xr.requestSession('immersive-ar', {
+                        requiredFeatures: ['hit-test'],
+                        optionalFeatures: ['dom-overlay'],
+                        domOverlay: { root: document.body }
+                    }).then(onSessionStarted);
+                } else {
+                    endSession(); // Завершение сессии по клику на "Завершить игру"
+                }
             });
 
             // Загрузка GLB модели
@@ -133,6 +138,14 @@
             cameraFrustum = new THREE.Matrix4();
         }
 
+        function endSession() {
+            // Завершаем AR-сессию
+            const session = renderer.xr.getSession();
+            if (session) {
+                session.end(); // Завершить текущую сессию
+            }
+        }
+
         function onSessionStarted(session) {
             renderer.xr.setSession(session);
             renderer.xr.setReferenceSpaceType('local');
@@ -148,6 +161,12 @@
 
         function onSessionEnded() {
             renderer.setAnimationLoop(null);
+
+            // Показываем начальный экран и текущий счет
+            document.getElementById('startScreen').style.display = 'flex';
+            document.getElementById('startButton').textContent = 'ЗАПУСТИТЬ AR';
+            document.getElementById('score').textContent = score; // Отображаем текущий счет
+            document.getElementById('arButton').textContent = 'ЗАПУСТИТЬ AR'; // Возвращаем текст кнопки
         }
 
         function createObject() {
@@ -275,75 +294,6 @@
                 highlight.style.display = 'none';
             }
         }
-        /*
-        function updateHighlightVisibility() {
-            // Обновление матрицы камеры и плоскостей отсечения (фрустума)
-            camera.updateMatrix();
-            camera.updateMatrixWorld();
-            cameraFrustum.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-            frustum.setFromProjectionMatrix(cameraFrustum);
-
-            let isVisible = false;
-            let closestObject = null;
-
-            objects.forEach((object) => {
-                if (!frustum.containsPoint(object.position)) {
-                    isVisible = true;
-                    closestObject = object;
-                }
-            });
-
-            const highlight = document.getElementById('screenHighlight');
-            if (isVisible && closestObject) {
-                // Преобразуем координаты объекта в 2D-координаты экрана
-                const objectPosition = closestObject.position.clone();
-                const screenPosition = new THREE.Vector3();
-                screenPosition.copy(objectPosition).project(camera);
-
-                // Преобразуем нормализованные координаты экрана [-1, 1] в пиксели
-                const x = (screenPosition.x * 0.5 + 0.5) * window.innerWidth;
-                const y = (screenPosition.y * -0.5 + 0.5) * window.innerHeight;
-
-                // Определяем, какой край экрана ближе к объекту
-                const padding = 20;
-                highlight.style.display = 'block';
-                highlight.style.width = 'auto';
-                highlight.style.height = 'auto';
-
-                if (x < padding) {
-                    // Левый край
-                    highlight.style.top = '0';
-                    highlight.style.bottom = '0';
-                    highlight.style.left = '0';
-                    highlight.style.width = '10px';
-                    highlight.style.height = '100%';
-                } else if (x > window.innerWidth - padding) {
-                    // Правый край
-                    highlight.style.top = '0';
-                    highlight.style.bottom = '0';
-                    highlight.style.right = '0';
-                    highlight.style.width = '10px';
-                    highlight.style.height = '100%';
-                } else if (y < padding) {
-                    // Верхний край
-                    highlight.style.top = '0';
-                    highlight.style.left = '0';
-                    highlight.style.right = '0';
-                    highlight.style.height = '10px';
-                    highlight.style.width = '100%';
-                } else if (y > window.innerHeight - padding) {
-                    // Нижний край
-                    highlight.style.bottom = '0';
-                    highlight.style.left = '0';
-                    highlight.style.right = '0';
-                    highlight.style.height = '10px';
-                    highlight.style.width = '100%';
-                }
-            } else {
-                highlight.style.display = 'none';
-            }
-        }*/
-
 
         function render() {
             time += 0.06;
