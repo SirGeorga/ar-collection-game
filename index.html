@@ -197,6 +197,82 @@
         }
 
         function updateHighlightVisibility() {
+            // Обновление матрицы камеры и фрустума
+            camera.updateMatrix();
+            camera.updateMatrixWorld();
+            cameraFrustum.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+            frustum.setFromProjectionMatrix(cameraFrustum);
+
+            let isVisible = false;
+            let closestObject = null;
+
+            objects.forEach((object) => {
+                if (!frustum.containsPoint(object.position)) {
+                    isVisible = true;
+                    closestObject = object;
+                }
+            });
+
+            const highlight = document.getElementById('screenHighlight');
+            if (isVisible && closestObject) {
+                // Преобразуем координаты объекта в 2D-координаты экрана
+                const objectPosition = closestObject.position.clone();
+                const screenPosition = new THREE.Vector3();
+                screenPosition.copy(objectPosition).project(camera);
+
+                // Проверяем нормализованные координаты экрана [-1, 1]
+                const x = screenPosition.x;
+                const y = screenPosition.y;
+
+                // Определяем, на каком краю экрана находится объект
+                highlight.style.display = 'block';
+                highlight.style.width = 'auto';
+                highlight.style.height = 'auto';
+
+                const padding = 0.1; // Порог для близости к краям экрана
+
+                // Определяем край экрана для подсветки
+                if (x < -1 + padding) {
+                    // Левый край
+                    highlight.style.top = '0';
+                    highlight.style.bottom = '0';
+                    highlight.style.left = '0';
+                    highlight.style.width = '10px';
+                    highlight.style.height = '100%';
+                    highlight.style.right = 'auto';
+                } else if (x > 1 - padding) {
+                    // Правый край
+                    highlight.style.top = '0';
+                    highlight.style.bottom = '0';
+                    highlight.style.right = '0';
+                    highlight.style.width = '10px';
+                    highlight.style.height = '100%';
+                    highlight.style.left = 'auto';
+                } else if (y < -1 + padding) {
+                    // Верхний край
+                    highlight.style.top = '0';
+                    highlight.style.left = '0';
+                    highlight.style.right = '0';
+                    highlight.style.height = '10px';
+                    highlight.style.width = '100%';
+                    highlight.style.bottom = 'auto';
+                } else if (y > 1 - padding) {
+                    // Нижний край
+                    highlight.style.bottom = '0';
+                    highlight.style.left = '0';
+                    highlight.style.right = '0';
+                    highlight.style.height = '10px';
+                    highlight.style.width = '100%';
+                    highlight.style.top = 'auto';
+                } else {
+                    highlight.style.display = 'none'; // Если объект в поле зрения, скрываем подсветку
+                }
+            } else {
+                highlight.style.display = 'none';
+            }
+        }
+        /*
+        function updateHighlightVisibility() {
             // Обновление матрицы камеры и плоскостей отсечения (фрустума)
             camera.updateMatrix();
             camera.updateMatrixWorld();
@@ -262,7 +338,7 @@
             } else {
                 highlight.style.display = 'none';
             }
-        }
+        }*/
 
 
         function render() {
