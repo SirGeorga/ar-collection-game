@@ -29,7 +29,8 @@
             z-index: 1000;
         }
         #startButton {
-            padding: 30px;
+            margin: 15px 0;
+            padding: 15px 30px;
             font-size: 24px;
             cursor: pointer;
             background-color: rgb(76, 175, 80);
@@ -42,7 +43,8 @@
             background-color: #45a049;
         }
         #storeButton {
-            padding: 30px;
+            margin: 15px 0;
+            padding: 15px 30px;
             font-size: 24px;
             cursor: pointer;
             background-color: rgb(76, 175, 80);
@@ -70,13 +72,13 @@
 </head>
 <body>
     <div id="startScreen">
-        <h3 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собрано PolyCoins: <span id="score">0</span></h1>
+        <h3 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Счёт PolyCoins: <span id="score"></span></h1>
         <img src="./sources/LOGO.png" alt="Image" style="max-width: 100px; margin-bottom: 100px;">
         <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собери свои PolyCoins</h1>
         <button id="startButton">ЗАПУСТИТЬ AR</button>
         <button id="storeButton">МАГАЗИН МЕРЧА</button>
     </div>
-    <div id="info">Собрано PolyCoins: <span id="score">0</span></div>
+    <div id="info">Собрано PolyCoins: <span id="score"></span></div>
     <script>
         let camera, scene, renderer;
         let cubes = [];
@@ -165,6 +167,7 @@
         }
 
         function onSessionStarted(session) {
+            objects = [];
             renderer.xr.setSession(session);
             renderer.xr.setReferenceSpaceType('local');
 
@@ -174,6 +177,7 @@
 //            createCube();
 //            setInterval(createObject, 5000); // Создавать новый объект каждые 5 секунд
             renderer.setAnimationLoop(render);
+            document.getElementById('info').style.display = 'block';
             document.getElementById('startScreen').style.display = 'none';
         }
 
