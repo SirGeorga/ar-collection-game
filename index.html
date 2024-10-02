@@ -72,18 +72,19 @@
 </head>
 <body>
     <div id="startScreen">
-        <h3 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Счёт PolyCoins: <span id="score">0</span></h3>
+        <h3 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Счёт PolyCoins: <span id="globalScore">0</span></h3>
         <img src="./sources/LOGO.png" alt="Image" style="max-width: 100px; margin-bottom: 100px;">
         <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собери свои PolyCoins</h1>
         <button id="startButton">ЗАПУСТИТЬ AR КВЕСТ</button>
         <button id="storeButton">МАГАЗИН МЕРЧА</button>
     </div>
-    <div id="info" style="display: none;">Собрано PolyCoins: <span id="score">0</span></div>
+    <div id="info" style="display: none;">Собрано PolyCoins: <span id="currentScore">0</span></div>
     <script>
         let camera, scene, renderer;
         let cubes = [];
         let objects = [];
         let score = 0;
+        let globalScore = 0;
         let time = 0;  // Добавим счетчик времени для анимации
         let glbModel;
         let frustum, cameraFrustum; // Для отслеживания видимости объектов
@@ -167,7 +168,7 @@
         }
 
         function onSessionStarted(session) {
-            objects = [];
+            score = 0;
             renderer.xr.setSession(session);
             renderer.xr.setReferenceSpaceType('local');
 
@@ -184,9 +185,15 @@
         function onSessionEnded() {
             renderer.setAnimationLoop(null);
 
+            // Удаляем все объекты из сцены
+            objects.forEach((object) => {
+                scene.remove(object);
+            });
+            objects = []; // Очищаем массив объектов
+
             // Показываем начальный экран и текущий счет
             document.getElementById('startScreen').style.display = 'flex';
-            document.getElementById('score').textContent = score; // Отображаем текущий счет
+            document.getElementById('globalScore').textContent = globalScore + score; // Отображаем текущий счет
             document.getElementById('info').style.display = 'none'; // Скрываем элемент информации
         }
 
@@ -219,7 +226,7 @@
                     scene.remove(object);
                     objects.splice(index, 1);
                     score++;
-                    document.getElementById('score').textContent = score;
+                    document.getElementById('currentScore').textContent = score;
 
                     if (navigator.vibrate) {
                         navigator.vibrate(200);
