@@ -41,6 +41,19 @@
         #startButton:hover {
             background-color: #45a049;
         }
+        #storeButton {
+            padding: 15px 30px;
+            font-size: 24px;
+            cursor: pointer;
+            background-color: rgb(76, 175, 80);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #storeButton:hover {
+            background-color: #45a049;
+        }
         #info {
             position: absolute;
             top: 30px;
@@ -56,11 +69,12 @@
     </style>
 </head>
 <body>
-    <div id="startScreen"></div>
+    <div id="startScreen">
         <h5 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собрано PolyCoins: <span id="score">0</span></h1>
         <img src="./sources/LOGO.png" alt="Image" style="max-width: 100px; margin-bottom: 100px;">
         <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собери свои PolyCoins</h1>
         <button id="startButton">ЗАПУСТИТЬ AR</button>
+        <button id="storeButton">МАГАЗИН МЕРЧА</button>
     </div>
     <div id="info">Собрано PolyCoins: <span id="score">0</span></div>
     <script>
