@@ -82,7 +82,7 @@
 
             createObject();
 //            createCube();
-
+            setInterval(createObject, 5000); // Создавать новый объект каждые 5 секунд
             renderer.setAnimationLoop(render);
         }
 
