@@ -43,7 +43,7 @@
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1.5);
             scene.add(light);
 
             const button = document.createElement('button');
@@ -69,6 +69,14 @@
             loader.load('./models/coin.glb', (gltf) => {
                 glbModel = gltf.scene;
                 glbModel.scale.set(1, 1, 1); // Масштабирование модели
+
+                // Настраиваем материал модели для лучшего отражения света
+                glbModel.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.metalness = 0.8;
+                        child.material.roughness = 0.2;
+                    }
+                });
             });
 
             window.addEventListener('resize', onWindowResize, false);
