@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR Cube Collector - Physical Movement</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/GLTFLoader.js"></script>
     <style>
         body { margin: 0; }
         #info {
@@ -26,8 +27,10 @@
     <script>
         let camera, scene, renderer;
         let cubes = [];
+        let objects = [];
         let score = 0;
         let time = 0;  // Добавим счетчик времени для анимации
+        let glbModel;
 
         init();
 
@@ -61,6 +64,13 @@
                 }).then(onSessionStarted);
             };
 
+            // Загрузка GLB модели
+            const loader = new THREE.GLTFLoader();
+            loader.load('./models/coin.glb', (gltf) => {
+                glbModel = gltf.scene;
+                glbModel.scale.set(0.1, 0.1, 0.1); // Масштабирование модели
+            });
+
             window.addEventListener('resize', onWindowResize, false);
         }
 
@@ -70,9 +80,8 @@
 
             session.addEventListener('end', onSessionEnded);
 
-            createCube();
-            //createInitialCubes();
-            //setInterval(createCube, 5000);  // Создавать новый куб каждые 5 секунд
+            createObject();
+//            createCube();
 
             renderer.setAnimationLoop(render);
         }
@@ -81,12 +90,46 @@
             renderer.setAnimationLoop(null);
         }
 
-        function createInitialCubes() {
-            for (let i = 0; i < 10; i++) {
-                createCube();
-            }
+        function createObject() {
+            if (!glbModel) return;
+
+            const object = glbModel.clone();
+
+            const cameraPosition = new THREE.Vector3();
+            camera.getWorldPosition(cameraPosition);
+
+            object.position.set(
+                cameraPosition.x + (Math.random() - 0.5) * 2,
+                cameraPosition.y + Math.random() * 0.5 - 0.25,
+                cameraPosition.z + (Math.random() - 0.5) * 2
+            );
+
+            object.initialY = object.position.y;
+
+            scene.add(object);
+            objects.push(object);
         }
 
+        function checkObjectCollection() {
+            const cameraPosition = new THREE.Vector3();
+            camera.getWorldPosition(cameraPosition);
+
+            objects.forEach((object, index) => {
+                if (object.position.distanceTo(cameraPosition) < 0.2) {
+                    scene.remove(object);
+                    objects.splice(index, 1);
+                    score++;
+                    document.getElementById('score').textContent = score;
+
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200);
+                    }
+
+                    createObject();
+                }
+            });
+        }
+/*
         function createCube() {
             const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
             const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
@@ -128,6 +171,7 @@
                 }
             });
         }
+            */
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -136,7 +180,17 @@
         }
 
         function render() {
-            time += 0.04;  // Увеличиваем время для анимации
+            time += 0.05;
+            objects.forEach(object => {
+                object.rotation.y += 0.04;
+                object.position.y = object.initialY + Math.sin(time) * 0.05;
+            });
+            checkObjectCollection();
+            renderer.render(scene, camera);
+        }
+        /*
+        function render() {
+            time += 0.05;  // Увеличиваем время для анимации
             cubes.forEach(cube => {
                 //cube.rotation.x += 0.01;  // Вращение вокруг оси X
                 cube.rotation.y += 0.04;  // Вращение вокруг оси Y
@@ -145,6 +199,7 @@
             checkCubeCollection();
             renderer.render(scene, camera);
         }
+        */
     </script>
 </body>
 </html>
