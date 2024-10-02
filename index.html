@@ -2,12 +2,45 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AR Cube Collector - Physical Movement</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
-        body { margin: 0; }
+        body { 
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+         }
+        #startScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('./sources/background.jpeg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #startButton {
+            padding: 15px 30px;
+            font-size: 24px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #startButton:hover {
+            background-color: #45a049;
+        }
         #info {
             position: absolute;
             top: 10px;
@@ -23,6 +56,10 @@
     </style>
 </head>
 <body>
+    <div id="startScreen">
+        <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">AR Cube Collector</h1>
+        <button id="startButton">ЗАПУСТИТЬ AR</button>
+    </div>
     <div id="info">Собрано ТПУ-Coins: <span id="score">0</span></div>
     <script>
         let camera, scene, renderer;
@@ -43,7 +80,7 @@
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1.5);
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 2);
             scene.add(light);
 
             const button = document.createElement('button');
@@ -56,13 +93,13 @@
             button.style.fontSize = '18px';
             document.body.appendChild(button);
 
-            button.onclick = () => {
+            document.getElementById('startButton').addEventListener('click', () => {
                 navigator.xr.requestSession('immersive-ar', {
                     requiredFeatures: ['hit-test'],
                     optionalFeatures: ['dom-overlay'],
                     domOverlay: { root: document.body }
                 }).then(onSessionStarted);
-            };
+            });
 
             // Загрузка GLB модели
             const loader = new THREE.GLTFLoader();
@@ -73,7 +110,7 @@
                 // Настраиваем материал модели для лучшего отражения света
                 glbModel.traverse((child) => {
                     if (child.isMesh) {
-                        child.material.metalness = 0.8;
+                        child.material.metalness = 1;
                         child.material.roughness = 0.2;
                     }
                 });
@@ -90,8 +127,9 @@
 
             createObject();
 //            createCube();
-            setInterval(createObject, 5000); // Создавать новый объект каждые 5 секунд
+//            setInterval(createObject, 5000); // Создавать новый объект каждые 5 секунд
             renderer.setAnimationLoop(render);
+            document.getElementById('startScreen').style.display = 'none';
         }
 
         function onSessionEnded() {
@@ -137,49 +175,6 @@
                 }
             });
         }
-/*
-        function createCube() {
-            const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-            const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
-            const cube = new THREE.Mesh(geometry, material);
-
-            const cameraPosition = new THREE.Vector3();
-            camera.getWorldPosition(cameraPosition);
-
-            cube.position.set(
-                cameraPosition.x + (Math.random() - 0.5) * 2,  // x
-                cameraPosition.y + Math.random() * 0.5 - 0.25,  // y (от -0.25 до 0.25 относительно камеры)
-                cameraPosition.z + (Math.random() - 0.5) * 2   // z
-            );
-
-            // Запоминаем начальную позицию куба по оси Y
-            cube.initialY = cube.position.y;
-
-            scene.add(cube);
-            cubes.push(cube);
-        }
-
-        function checkCubeCollection() {
-            const cameraPosition = new THREE.Vector3();
-            camera.getWorldPosition(cameraPosition);
-
-            cubes.forEach((cube, index) => {
-                if (cube.position.distanceTo(cameraPosition) < 0.2) {
-                    scene.remove(cube);
-                    cubes.splice(index, 1);
-                    score++;
-                    document.getElementById('score').textContent = score;
-
-                    // Вибрация при сборе куба (200 миллисекунд)
-                    if (navigator.vibrate) {
-                        navigator.vibrate(200);
-                    }
-
-                    createCube();  // Создаем новый куб взамен собранного
-                }
-            });
-        }
-            */
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -196,18 +191,6 @@
             checkObjectCollection();
             renderer.render(scene, camera);
         }
-        /*
-        function render() {
-            time += 0.05;  // Увеличиваем время для анимации
-            cubes.forEach(cube => {
-                //cube.rotation.x += 0.01;  // Вращение вокруг оси X
-                cube.rotation.y += 0.04;  // Вращение вокруг оси Y
-                cube.position.y = cube.initialY + Math.sin(time) * 0.05;  // Кубы поднимаются и опускаются на 0.05 единицы
-            });
-            checkCubeCollection();
-            renderer.render(scene, camera);
-        }
-        */
     </script>
 </body>
 </html>
