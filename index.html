@@ -120,16 +120,11 @@
 
             window.addEventListener('resize', onWindowResize, false);
 
-             // Добавляем подсветку на экран
+            // Добавляем подсветку на экран
             const screenHighlight = document.createElement('div');
             screenHighlight.id = 'screenHighlight';
             screenHighlight.style.position = 'absolute';
-            screenHighlight.style.top = '50%';
-            screenHighlight.style.left = '50%';
-            screenHighlight.style.width = '100px';
-            screenHighlight.style.height = '100px';
-            screenHighlight.style.border = '2px solid red';
-            screenHighlight.style.borderRadius = '50%';
+            screenHighlight.style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
             screenHighlight.style.pointerEvents = 'none';
             screenHighlight.style.display = 'none';
             document.body.appendChild(screenHighlight);
@@ -209,16 +204,61 @@
             frustum.setFromProjectionMatrix(cameraFrustum);
 
             let isVisible = false;
+            let closestObject = null;
 
             objects.forEach((object) => {
                 if (!frustum.containsPoint(object.position)) {
                     isVisible = true;
+                    closestObject = object;
                 }
             });
 
             const highlight = document.getElementById('screenHighlight');
-            if (isVisible) {
+            if (isVisible && closestObject) {
+                // Преобразуем координаты объекта в 2D-координаты экрана
+                const objectPosition = closestObject.position.clone();
+                const screenPosition = new THREE.Vector3();
+                screenPosition.copy(objectPosition).project(camera);
+
+                // Преобразуем нормализованные координаты экрана [-1, 1] в пиксели
+                const x = (screenPosition.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (screenPosition.y * -0.5 + 0.5) * window.innerHeight;
+
+                // Определяем, какой край экрана ближе к объекту
+                const padding = 20;
                 highlight.style.display = 'block';
+                highlight.style.width = 'auto';
+                highlight.style.height = 'auto';
+
+                if (x < padding) {
+                    // Левый край
+                    highlight.style.top = '0';
+                    highlight.style.bottom = '0';
+                    highlight.style.left = '0';
+                    highlight.style.width = '10px';
+                    highlight.style.height = '100%';
+                } else if (x > window.innerWidth - padding) {
+                    // Правый край
+                    highlight.style.top = '0';
+                    highlight.style.bottom = '0';
+                    highlight.style.right = '0';
+                    highlight.style.width = '10px';
+                    highlight.style.height = '100%';
+                } else if (y < padding) {
+                    // Верхний край
+                    highlight.style.top = '0';
+                    highlight.style.left = '0';
+                    highlight.style.right = '0';
+                    highlight.style.height = '10px';
+                    highlight.style.width = '100%';
+                } else if (y > window.innerHeight - padding) {
+                    // Нижний край
+                    highlight.style.bottom = '0';
+                    highlight.style.left = '0';
+                    highlight.style.right = '0';
+                    highlight.style.height = '10px';
+                    highlight.style.width = '100%';
+                }
             } else {
                 highlight.style.display = 'none';
             }
