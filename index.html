@@ -186,6 +186,7 @@
         function onSessionEnded() {
             renderer.setAnimationLoop(null);
 
+            globalScore += score;
             // Удаляем все объекты из сцены
             objects.forEach((object) => {
                 scene.remove(object);
@@ -194,7 +195,7 @@
 
             // Показываем начальный экран и текущий счет
             document.getElementById('startScreen').style.display = 'flex';
-            document.getElementById('globalScore').textContent = globalScore + score; // Отображаем глобальный счет
+            document.getElementById('globalScore').textContent = globalScore; // Отображаем глобальный счет
             document.getElementById('info').style.display = 'none'; // Скрываем элемент информации
         }
 
