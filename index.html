@@ -72,13 +72,13 @@
 </head>
 <body>
     <div id="startScreen">
-        <h3 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Счёт PolyCoins: <span id="score"></span></h1>
+        <h3 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Счёт PolyCoins: <span id="score">0</span></h3>
         <img src="./sources/LOGO.png" alt="Image" style="max-width: 100px; margin-bottom: 100px;">
         <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собери свои PolyCoins</h1>
         <button id="startButton">ЗАПУСТИТЬ AR</button>
         <button id="storeButton">МАГАЗИН МЕРЧА</button>
     </div>
-    <div id="info">Собрано PolyCoins: <span id="score"></span></div>
+    <div id="info">Собрано PolyCoins: <span id="score">0</span></div>
     <script>
         let camera, scene, renderer;
         let cubes = [];
@@ -186,8 +186,8 @@
 
             // Показываем начальный экран и текущий счет
             document.getElementById('startScreen').style.display = 'flex';
-            document.getElementById('startButton').textContent = 'ЗАПУСТИТЬ AR';
             document.getElementById('score').textContent = score; // Отображаем текущий счет
+            document.getElementById('info').style.display = 'none'; // Скрываем элемент информации
         }
 
         function createObject() {
