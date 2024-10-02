@@ -56,7 +56,8 @@
     </style>
 </head>
 <body>
-    <div id="startScreen">
+    <div id="startScreen"></div>
+        <h5 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собрано PolyCoins: <span id="score">0</span></h1>
         <img src="./sources/LOGO.png" alt="Image" style="max-width: 100px; margin-bottom: 100px;">
         <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собери свои PolyCoins</h1>
         <button id="startButton">ЗАПУСТИТЬ AR</button>
@@ -87,7 +88,7 @@
 
             const button = document.createElement('button');
             button.id = 'arButton'; // Добавляем ID кнопке для управления
-            button.textContent = 'ЗАПУСТИТЬ AR';
+            button.textContent = 'Завершить игру';
             button.style.position = 'absolute';
             button.style.bottom = '20px';
             button.style.left = '50%';
@@ -104,6 +105,12 @@
                         domOverlay: { root: document.body }
                     }).then(onSessionStarted);
                 } else {
+                    endSession(); // Завершение сессии по клику на "Завершить игру"
+                }
+            });
+
+            document.getElementById('arButton').addEventListener('click', () => {
+                if (button.textContent === 'Завершить игру') {
                     endSession(); // Завершение сессии по клику на "Завершить игру"
                 }
             });
@@ -166,7 +173,6 @@
             document.getElementById('startScreen').style.display = 'flex';
             document.getElementById('startButton').textContent = 'ЗАПУСТИТЬ AR';
             document.getElementById('score').textContent = score; // Отображаем текущий счет
-            document.getElementById('arButton').textContent = 'ЗАПУСТИТЬ AR'; // Возвращаем текст кнопки
         }
 
         function createObject() {
