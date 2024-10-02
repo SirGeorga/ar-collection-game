@@ -105,7 +105,7 @@
 
             const button = document.createElement('button');
             button.id = 'arButton'; // Добавляем ID кнопке для управления
-            button.textContent = 'Завершить игру';
+            button.textContent = 'Завершить квест';
             button.style.position = 'absolute';
             button.style.bottom = '20px';
             button.style.left = '50%';
@@ -124,8 +124,8 @@
             });
 
             document.getElementById('arButton').addEventListener('click', () => {
-                if (button.textContent === 'Завершить игру') {
-                    endSession(); // Завершение сессии по клику на "Завершить игру"
+                if (button.textContent === 'Завершить квест') {
+                    endSession(); // Завершение сессии по клику на "Завершить квест"
                 }
             });
 
