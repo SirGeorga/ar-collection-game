@@ -118,6 +118,12 @@
                     cubes.splice(index, 1);
                     score++;
                     document.getElementById('score').textContent = score;
+
+                    // Вибрация при сборе куба (200 миллисекунд)
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200);
+                    }
+
                     createCube();  // Создаем новый куб взамен собранного
                 }
             });
