@@ -118,6 +118,23 @@
             });
 
             window.addEventListener('resize', onWindowResize, false);
+
+             // Добавляем подсветку на экран
+            const screenHighlight = document.createElement('div');
+            screenHighlight.id = 'screenHighlight';
+            screenHighlight.style.position = 'absolute';
+            screenHighlight.style.top = '50%';
+            screenHighlight.style.left = '50%';
+            screenHighlight.style.width = '100px';
+            screenHighlight.style.height = '100px';
+            screenHighlight.style.border = '2px solid red';
+            screenHighlight.style.borderRadius = '50%';
+            screenHighlight.style.pointerEvents = 'none';
+            screenHighlight.style.display = 'none';
+            document.body.appendChild(screenHighlight);
+
+            frustum = new THREE.Frustum();
+            cameraFrustum = new THREE.Matrix4();
         }
 
         function onSessionStarted(session) {
@@ -183,27 +200,29 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        function checkObjectVisibility() {
-            const cameraDirection = new THREE.Vector3();
-            camera.getWorldDirection(cameraDirection);  // Получаем направление камеры
+        function updateHighlightVisibility() {
+            // Обновление матрицы камеры и плоскостей отсечения (фрустума)
+            camera.updateMatrix();
+            camera.updateMatrixWorld();
+            cameraFrustum.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+            frustum.setFromProjectionMatrix(cameraFrustum);
+
+            let isVisible = false;
 
             objects.forEach((object) => {
-                const objectDirection = new THREE.Vector3();
-                object.getWorldPosition(objectDirection);  // Позиция объекта относительно сцены
-
-                // Направление от камеры к объекту
-                objectDirection.sub(camera.position).normalize();
-
-                // Проверяем, насколько направление на объект отклонено от взгляда камеры
-                const dotProduct = cameraDirection.dot(objectDirection);  // Если это значение близко к 1, объект перед камерой
-
-                if (dotProduct < 0.5) {  // Если объект не в поле зрения (коэффициент меньше 0.5)
-                    document.body.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';  // Подсветка экрана красным
-                } else {
-                    document.body.style.backgroundColor = 'transparent';  // Убираем подсветку
+                if (!frustum.containsPoint(object.position)) {
+                    isVisible = true;
                 }
             });
+
+            const highlight = document.getElementById('screenHighlight');
+            if (isVisible) {
+                highlight.style.display = 'block';
+            } else {
+                highlight.style.display = 'none';
+            }
         }
+
 
         function render() {
             time += 0.06;
@@ -212,7 +231,7 @@
                 object.position.y = object.initialY + Math.sin(time) * 0.05;
             });
             checkObjectCollection();
-            checkObjectVisibility();
+            updateHighlightVisibility();
             renderer.render(scene, camera);
         }
     </script>
