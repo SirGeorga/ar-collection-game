@@ -32,7 +32,7 @@
             padding: 15px 30px;
             font-size: 24px;
             cursor: pointer;
-            background-color: #4CAF50;
+            background-color: #4caf50;
             color: white;
             border: none;
             border-radius: 5px;
@@ -240,6 +240,7 @@
                     highlight.style.width = '10px';
                     highlight.style.height = '100%';
                     highlight.style.right = 'auto';
+                    highlight.style.background = 'linear-gradient(to right, rgba(255, 0, 0, 0.8), rgba(255, 0, 0, 0))';
                 } else if (x > 1 - padding) {
                     // Правый край
                     highlight.style.top = '0';
@@ -248,6 +249,7 @@
                     highlight.style.width = '10px';
                     highlight.style.height = '100%';
                     highlight.style.left = 'auto';
+                    highlight.style.background = 'linear-gradient(to left, rgba(255, 0, 0, 0.8), rgba(255, 0, 0, 0))';
                 } else if (y > -1 + padding) {
                     // Верхний край
                     highlight.style.top = '0';
@@ -256,6 +258,7 @@
                     highlight.style.height = '10px';
                     highlight.style.width = '100%';
                     highlight.style.bottom = 'auto';
+                    highlight.style.background = 'linear-gradient(to bottom, rgba(255, 0, 0, 0.8), rgba(255, 0, 0, 0))';
                 } else if (y < 1 - padding) {
                     // Нижний край
                     highlight.style.bottom = '0';
@@ -264,6 +267,7 @@
                     highlight.style.height = '10px';
                     highlight.style.width = '100%';
                     highlight.style.top = 'auto';
+                    highlight.style.background = 'linear-gradient(to top, rgba(255, 0, 0, 0.8), rgba(255, 0, 0, 0))';
                 } else {
                     highlight.style.display = 'none'; // Если объект в поле зрения, скрываем подсветку
                 }
