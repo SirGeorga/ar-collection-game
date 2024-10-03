@@ -167,16 +167,33 @@
             cameraFrustum.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
             frustum.setFromProjectionMatrix(cameraFrustum);
 
-            const highlight = document.getElementById('screenHighlight')
-            let closestObject = objects.find(object => !frustum.containsPoint(object.position));
+            let isVisible = false;
+            let closestObject = null;
+
+            objects.forEach((object) => {
+                if (!frustum.containsPoint(object.position)) {
+                    isVisible = true;
+                    closestObject = object;
+                }
+            });
+
+            const highlight = document.getElementById('screenHighlight');
+            if (isVisible && closestObject) {
+                // Преобразуем координаты объекта в 2D-координаты экрана
+                const objectPosition = closestObject.position.clone();
+                const screenPosition = new THREE.Vector3();
+                screenPosition.copy(objectPosition).project(camera);
+
+                // Проверяем нормализованные координаты экрана [-1, 1]
+                const x = screenPosition.x;
+                const y = screenPosition.y;
 
                 // Определяем, на каком краю экрана находится объект
-            if (closestObject) {
-                const screenPosition = closestObject.position.clone().project(camera);
-                const x = screenPosition.x, y = screenPosition.y;
-                const padding = 0.1; // Порог для близости к краям экрана
-
                 highlight.style.display = 'block';
+                highlight.style.width = 'auto';
+                highlight.style.height = 'auto';
+
+                const padding = 0.1; // Порог для близости к краям экрана
                 // Определяем край экрана для подсветки
                 if (x < -1 + padding) {
                     // Левый край
