@@ -144,13 +144,12 @@
             objects = objects.filter(object => {
                 if (object.position.distanceTo(cameraPosition) < 0.2) {
                     scene.remove(object);
+                    objects.splice(index, 1);
                     score++;
                     document.getElementById('currentScore').textContent = score;
                     if (navigator.vibrate) navigator.vibrate(200);
                     createObject();
-                    return false;
                 }
-                return true;
             });
         }
 
