@@ -83,7 +83,7 @@
             const loader = new THREE.GLTFLoader();
             loader.load('./models/coin_tpu.glb', (gltf) => {
                 glbModel = gltf.scene;
-                glbModel.scale.set(1, 1, 1); // Масштабирование модели
+                glbModel.scale.set(0.1, 0.1, 0.1); // Масштабирование модели
 
                 // Настраиваем материал модели для лучшего отражения света
                 glbModel.traverse((child) => {
