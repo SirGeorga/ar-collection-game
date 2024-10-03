@@ -7,12 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
-        body { 
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-         }
+        body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
         #startScreen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url('./sources/BACKGROUND.jpg');
@@ -38,8 +33,8 @@
         <h3 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Счёт PolyCoins: <span id="globalScore">0</span></h3>
         <img src="./sources/LOGO.png" alt="Image" style="max-width: 100px; margin-bottom: 100px;">
         <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собери свои PolyCoins</h1>
-        <button id="startButton">ЗАПУСТИТЬ AR КВЕСТ</button>
-        <button id="storeButton">МАГАЗИН МЕРЧА</button>
+        <button id="startButton" class="button">ЗАПУСТИТЬ AR КВЕСТ</button>
+        <button id="storeButton" class="button">МАГАЗИН МЕРЧА</button>
     </div>
     <div id="info" style="display: none;">Собрано PolyCoins: <span id="currentScore">0</span></div>
     <script>
@@ -121,6 +116,13 @@
             document.getElementById('info').style.display = 'none'; // Скрываем элемент информации
         }
 
+        function endSession() {
+            const session = renderer.xr.getSession();
+            if (session) {
+                session.end();
+            }
+        }
+
         function createObject() {
             if (!glbModel) return;
             const object = glbModel.clone();
@@ -139,7 +141,7 @@
         function checkObjectCollection() {
             const cameraPosition = new THREE.Vector3();
             camera.getWorldPosition(cameraPosition);
-            object = objects.filter(object => {
+            objects = objects.filter(object => {
                 if (object.position.distanceTo(cameraPosition) < 0.2) {
                     scene.remove(object);
                     score++;
