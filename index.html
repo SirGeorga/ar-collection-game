@@ -20,7 +20,9 @@
             background-color: rgb(76, 175, 80); color: white; border: none; border-radius: 5px;
             transition: background-color 0.3s;
         }
-        .button:hover { background-color: #45a049; }
+        .button:hover {
+            background-color: #45a049;
+        }
         #info {
             position: absolute; top: 30px; width: 100%; text-align: center; z-index: 100;
             color: white; font-family: Arial, sans-serif; font-size: 18px;
@@ -38,26 +40,36 @@
     </div>
     <div id="info" style="display: none;">Собрано PolyCoins: <span id="currentScore">0</span></div>
     <script>
-        let camera, scene, renderer, glbModel, frustum, cameraFrustum;
+        let camera, scene, renderer, frustum, cameraFrustum, glbModel; // Для отслеживания видимости объектов;
         let objects = [], score = 0, globalScore = 0, time = 0;
+
+        init();
 
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 2));
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 2);
+            scene.add(light);
 
             const button = document.createElement('button');
             button.id = 'arButton'; // Добавляем ID кнопке для управления
             button.textContent = 'Завершить квест';
-            button.style.cssText = 'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; fontSize: 18px'
+            button.style.position = 'absolute';
+            button.style.bottom = '20px';
+            button.style.left = '50%';
+            button.style.transform = 'translateX(-50%)';
+            button.style.padding = '12px 24px';
+            button.style.fontSize = '18px';
             document.body.appendChild(button);
 
             document.getElementById('startButton').addEventListener('click', () => {
+
                 navigator.xr.requestSession('immersive-ar', {
                     requiredFeatures: ['hit-test'],
                     optionalFeatures: ['dom-overlay'],
@@ -65,12 +77,18 @@
                 }).then(onSessionStarted);
             });
 
-            document.getElementById('arButton').addEventListener('click', endSession);
+            document.getElementById('arButton').addEventListener('click', () => {
+                if (button.textContent === 'Завершить квест') {
+                    endSession(); // Завершение сессии по клику на "Завершить квест"
+                }
+            });
 
             // Загрузка GLB модели
-            new THREE.GLTFLoader().load('./models/coin.glb', (gltf) => {
+            const loader = new THREE.GLTFLoader();
+            loader.load('./models/coin.glb', (gltf) => {
                 glbModel = gltf.scene;
                 glbModel.scale.set(1, 1, 1); // Масштабирование модели
+
                 // Настраиваем материал модели для лучшего отражения света
                 glbModel.traverse((child) => {
                     if (child.isMesh) {
@@ -80,16 +98,27 @@
                 });
             });
 
-            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('resize', onWindowResize, false);
 
             // Добавляем подсветку на экран
             const screenHighlight = document.createElement('div');
             screenHighlight.id = 'screenHighlight';
-            screenHighlight.style.cssText ='position: absolute; backgroundColor: rgb(76, 175, 80); pointerEvents: none; display: none'
+            screenHighlight.style.position = 'absolute';
+            screenHighlight.style.backgroundColor = 'rgb(76, 175, 80)';
+            screenHighlight.style.pointerEvents = 'none';
+            screenHighlight.style.display = 'none';
             document.body.appendChild(screenHighlight);
 
             frustum = new THREE.Frustum();
             cameraFrustum = new THREE.Matrix4();
+        }
+
+        function endSession() {
+            // Завершаем AR-сессию
+            const session = renderer.xr.getSession();
+            if (session) {
+                session.end(); // Завершить текущую сессию
+            }
         }
 
         function onSessionStarted(session) {
@@ -97,8 +126,12 @@
             document.getElementById('currentScore').textContent = score; // Отображаем текущий счет
             renderer.xr.setSession(session);
             renderer.xr.setReferenceSpaceType('local');
+
             session.addEventListener('end', onSessionEnded);
+
             createObject();
+//            createCube();
+//            setInterval(createObject, 5000); // Создавать новый объект каждые 5 секунд
             renderer.setAnimationLoop(render);
             document.getElementById('info').style.display = 'block';
             document.getElementById('startScreen').style.display = 'none';
@@ -106,34 +139,36 @@
 
         function onSessionEnded() {
             renderer.setAnimationLoop(null);
+
             globalScore += score;
             // Удаляем все объекты из сцены
-            objects.forEach(object => scene.remove(object));
+            objects.forEach((object) => {
+                scene.remove(object);
+            });
             objects = []; // Очищаем массив объектов
+
             // Показываем начальный экран и текущий счет
             document.getElementById('startScreen').style.display = 'flex';
             document.getElementById('globalScore').textContent = globalScore; // Отображаем глобальный счет
             document.getElementById('info').style.display = 'none'; // Скрываем элемент информации
         }
 
-        function endSession() {
-            const session = renderer.xr.getSession();
-            if (session) {
-                session.end();
-            }
-        }
-
         function createObject() {
             if (!glbModel) return;
+
             const object = glbModel.clone();
+
             const cameraPosition = new THREE.Vector3();
             camera.getWorldPosition(cameraPosition);
+
             object.position.set(
                 cameraPosition.x + (Math.random() - 0.5) * 2,
                 cameraPosition.y + Math.random() * 0.5 - 0.25,
                 cameraPosition.z + (Math.random() - 0.5) * 2
             );
+
             object.initialY = object.position.y;
+
             scene.add(object);
             objects.push(object);
         }
@@ -141,13 +176,18 @@
         function checkObjectCollection() {
             const cameraPosition = new THREE.Vector3();
             camera.getWorldPosition(cameraPosition);
-            objects = objects.filter(object => {
+
+            objects.forEach((object, index) => {
                 if (object.position.distanceTo(cameraPosition) < 0.2) {
                     scene.remove(object);
                     objects.splice(index, 1);
                     score++;
                     document.getElementById('currentScore').textContent = score;
-                    if (navigator.vibrate) navigator.vibrate(200);
+
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200);
+                    }
+
                     createObject();
                 }
             });
@@ -193,19 +233,44 @@
                 highlight.style.height = 'auto';
 
                 const padding = 0.1; // Порог для близости к краям экрана
+
                 // Определяем край экрана для подсветки
                 if (x < -1 + padding) {
                     // Левый край
-                    highlight.style.cssText = 'top: 0; bottom: 0; left: 0; width: 10px; height: 100%; background: linear-gradient(to right, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0));';
+                    highlight.style.top = '0';
+                    highlight.style.bottom = '0';
+                    highlight.style.left = '0';
+                    highlight.style.width = '10px';
+                    highlight.style.height = '100%';
+                    highlight.style.right = 'auto';
+                    highlight.style.background = 'linear-gradient(to right, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0))';
                 } else if (x > 1 - padding) {
                     // Правый край
-                    highlight.style.cssText = 'top: 0; bottom: 0; right: 0; width: 10px; height: 100%; background: linear-gradient(to left, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0));';
+                    highlight.style.top = '0';
+                    highlight.style.bottom = '0';
+                    highlight.style.right = '0';
+                    highlight.style.width = '10px';
+                    highlight.style.height = '100%';
+                    highlight.style.left = 'auto';
+                    highlight.style.background = 'linear-gradient(to left, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0))';
                 } else if (y > -1 + padding) {
                     // Верхний край
-                    highlight.style.cssText = 'top: 0; left: 0; right: 0; height: 10px; width: 100%; background: linear-gradient(to bottom, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0));';
+                    highlight.style.top = '0';
+                    highlight.style.left = '0';
+                    highlight.style.right = '0';
+                    highlight.style.height = '10px';
+                    highlight.style.width = '100%';
+                    highlight.style.bottom = 'auto';
+                    highlight.style.background = 'linear-gradient(to bottom, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0))';
+                } else if (y < 1 - padding) {
                     // Нижний край
-                } else if (y < -1 + padding) {
-                    highlight.style.cssText = 'bottom: 0; left: 0; right: 0; height: 10px; width: 100%; background: linear-gradient(to top, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0));';
+                    highlight.style.bottom = '0';
+                    highlight.style.left = '0';
+                    highlight.style.right = '0';
+                    highlight.style.height = '10px';
+                    highlight.style.width = '100%';
+                    highlight.style.top = 'auto';
+                    highlight.style.background = 'linear-gradient(to top, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0))';
                 } else {
                     highlight.style.display = 'none'; // Если объект в поле зрения, скрываем подсветку
                 }
@@ -224,7 +289,6 @@
             updateHighlightVisibility();
             renderer.render(scene, camera);
         }
-        init();
     </script>
 </body>
 </html>
