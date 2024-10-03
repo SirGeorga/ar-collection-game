@@ -60,12 +60,8 @@
             const button = document.createElement('button');
             button.id = 'arButton'; // Добавляем ID кнопке для управления
             button.textContent = 'Завершить квест';
-            button.style.position = 'absolute';
-            button.style.bottom = '20px';
-            button.style.left = '50%';
-            button.style.transform = 'translateX(-50%)';
-            button.style.padding = '12px 24px';
-            button.style.fontSize = '18px';
+            button.className = 'button'; // Добавляем класс 'button'
+            button.style.cssText = 'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);';
             document.body.appendChild(button);
 
             document.getElementById('startButton').addEventListener('click', () => {
@@ -126,12 +122,8 @@
             document.getElementById('currentScore').textContent = score; // Отображаем текущий счет
             renderer.xr.setSession(session);
             renderer.xr.setReferenceSpaceType('local');
-
             session.addEventListener('end', onSessionEnded);
-
             createObject();
-//            createCube();
-//            setInterval(createObject, 5000); // Создавать новый объект каждые 5 секунд
             renderer.setAnimationLoop(render);
             document.getElementById('info').style.display = 'block';
             document.getElementById('startScreen').style.display = 'none';
