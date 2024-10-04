@@ -8,13 +8,14 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
         body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-        #startScreen {
+        #startScreen, #qrScanner {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url('./sources/BACKGROUND.jpg');
             background-size: cover; background-position: center;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 1000;
         }
+        #qrScanner { display: none; }
         .button {
             margin: 15px 0; padding: 15px 30px; font-size: 24px; cursor: pointer;
             background-color: rgb(76, 175, 80); color: white; border: none; border-radius: 5px;
@@ -28,6 +29,7 @@
             color: white; font-family: Arial, sans-serif; font-size: 18px;
             text-shadow: 0 0 3px black;
         }
+        #reader { width: 300px; height: 300px; }
     </style>
 </head>
 <body>
@@ -38,10 +40,16 @@
         <button id="startButton" class="button">ЗАПУСТИТЬ AR КВЕСТ</button>
         <button id="storeButton" class="button">МАГАЗИН МЕРЧА</button>
     </div>
+    <div id="qrScanner">
+        <h2 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Отсканируйте QR-код</h2>
+        <div id="reader"></div>
+        <button id="cancelScan" class="button">Отмена</button>
+    </div>
     <div id="info" style="display: none;">Собрано PolyCoins: <span id="currentScore">0</span></div>
     <script>
         let camera, scene, renderer, frustum, cameraFrustum, glbModel; // Для отслеживания видимости объектов;
         let objects = [], score = 0, globalScore = 0, time = 0;
+        let html5QrCode;
 
         init();
 
@@ -64,6 +72,7 @@
             button.style.cssText = 'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);';
             document.body.appendChild(button);
 
+            /*
             document.getElementById('startButton').addEventListener('click', () => {
 
                 navigator.xr.requestSession('immersive-ar', {
@@ -72,7 +81,7 @@
                     domOverlay: { root: document.body }
                 }).then(onSessionStarted);
             });
-
+*/
             document.getElementById('arButton').addEventListener('click', () => {
                 if (button.textContent === 'Завершить квест') {
                     endSession(); // Завершение сессии по клику на "Завершить квест"
@@ -107,6 +116,65 @@
 
             frustum = new THREE.Frustum();
             cameraFrustum = new THREE.Matrix4();
+
+            document.getElementById('startButton').addEventListener('click', startQRScanner);
+            document.getElementById('cancelScan').addEventListener('click', cancelQRScanner);
+        }
+
+        function startQRScanner() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('qrScanner').style.display = 'flex';
+
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                },
+                onQRCodeSuccess,
+                onQRCodeError
+            );
+        }
+
+        function cancelQRScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('qrScanner').style.display = 'none';
+                    document.getElementById('startScreen').style.display = 'flex';
+                });
+            }
+        }
+
+        function onQRCodeSuccess(decodedText, decodedResult) {
+            html5QrCode.stop();
+            document.getElementById('qrScanner').style.display = 'none';
+            
+            // Здесь вы можете обработать результат сканирования QR-кода
+            if (decodedText.includes('polycoins')) {
+                startARSession('polycoins');
+            } else if (decodedText.includes('other_quest')) {
+                // Здесь можно добавить логику для запуска другого квеста
+                alert('Другой квест пока не реализован');
+                document.getElementById('startScreen').style.display = 'flex';
+            } else {
+                alert('Неизвестный QR-код');
+                document.getElementById('startScreen').style.display = 'flex';
+            }
+        }
+
+        function onQRCodeError(error) {
+            console.warn(`QR Code scanning failed: ${error}`);
+        }
+
+        function startARSession(mode) {
+            if (mode === 'polycoins') {
+                navigator.xr.requestSession('immersive-ar', {
+                    requiredFeatures: ['hit-test'],
+                    optionalFeatures: ['dom-overlay'],
+                    domOverlay: { root: document.body }
+                }).then(onSessionStarted);
+            }
         }
 
         function endSession() {
