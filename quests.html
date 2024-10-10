@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Выбор квеста - AR Cube Collector</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-image: url('./sources/BACKGROUND.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        .quest-list {
+            width: 100%;
+            max-width: 600px;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .quest-button {
+            display: flex; /* Используем Flexbox для кнопки */
+            align-items: center; /* Центрируем элементы по вертикали */
+            justify-content: space-between; /* Располагаем элементы слева */
+            width: 100%;
+            margin: 10px 0;
+            padding: 15px;
+            font-size: 18px;
+            background-color: rgb(76, 175, 80);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .quest-button:hover {
+            background-color: #45a049;
+        }
+        #qrScanner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #reader {
+            width: 300px;
+            height: 300px;
+        }
+        .coin-image {
+            width: 30px; /* Ширина изображения */
+            height: 30px; /* Высота изображения */
+            margin-left: 10px; /* Отступ справа от изображения */
+        }
+        .polycoins-text {
+            font-size: 32px;
+            font-weight: bold;
+            color: #004916; /* Цвет текста */
+        }
+        .separator {
+            width: 1px; /* Ширина разделителя */
+            height: 35px; /* Высота разделителя */
+            background-color: #004916; /* Цвет разделителя */
+            margin-inline: 10px; /* Отступы вокруг разделителя */
+        }
+        .right-content {
+            display: flex;
+            align-items: center; /* Центрируем элементы по вертикали */
+        }
+
+        .back-button {
+            align-items: center; /* Центрируем элементы по вертикали */
+            width: 100%;
+            margin: 10px 0;
+            padding: 15px;
+            font-size: 18px;
+            background-color: rgb(19, 117, 22);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+    </style>
+</head>
+<body>
+    <h2 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); text-align: center;">Выбери квест или отсканируй его QR-код</h1>
+    <div class="quest-list">
+        <button class="quest-button" onclick="window.location.href='polycoins.html'">
+            <div style="text-align: left;">
+                <span>Собери их все!</span>
+            </div>
+            <div class="right-content">
+                <div class="separator"></div>
+                <span class="polycoins-text">  100</span>
+                <img src="./sources/TPU-COIN_low.png" alt="Coin" class="coin-image">
+            </div>
+        </button>
+        <button class="quest-button" onclick="alert('Этот квест пока недоступен')">
+            <div style="text-align: left;">
+                <span>Найди все мотиваторы в ГК</span>
+            </div>
+            <div class="right-content">
+                <div class="separator"></div>
+                <span class="polycoins-text">  150</span>
+                <img src="./sources/TPU-COIN_low.png" alt="Coin" class="coin-image">
+            </div>
+        </button>
+        <button class="quest-button" onclick="alert('Этот квест пока недоступен')">
+            <div style="text-align: left;">
+                <span>Polytech GO</span>
+            </div>
+            <div class="right-content">
+                <div class="separator"></div>
+                <span class="polycoins-text">  200</span>
+                <img src="./sources/TPU-COIN_low.png" alt="Coin" class="coin-image">
+            </div>
+        </button>
+        <button class="quest-button" onclick="window.open('https://apply.tpu.ru', '_blank')">
+            <div style="text-align: left;">
+                <span>Подай заявление в ТПУ</span>
+            </div>
+            <div class="right-content">
+                <div class="separator"></div>
+                <span class="polycoins-text">  500</span>
+                <img src="./sources/TPU-COIN_low.png" alt="Coin" class="coin-image">
+            </div>
+        </button>
+        <button class="quest-button" onclick="playConfetti()">
+            <div style="text-align: left;">
+                <span>Поступи в ТПУ</span>
+            </div>
+            <div class="right-content">
+                <div class="separator"></div>
+                <span class="polycoins-text">1000</span>
+                <img src="./sources/TPU-COIN_low.png" alt="Coin" class="coin-image">
+            </div>
+        </button>
+        <button class="quest-button" onclick="startQRScanner()">
+            <div style="text-align: left;">
+                <span>Отсканировать QR-код квеста</span>
+            </div>
+            <div class="right-content">
+                <div class="separator"></div>
+                <img src="./sources/qr_ic.png" alt="Coin" class="coin-image">
+            </div>
+        <button class="back-button" onclick="window.location.href='index.html'">НАЗАД</button>
+    </div>
+    <div id="qrScanner">
+        <div id="reader"></div>
+        <button class="back-button" onclick="cancelQRScanner()" style="margin-top: 20px;">Отмена</button>
+    </div>
+
+    <script>
+        let html5QrCode;
+
+        function startQRScanner() {
+            document.getElementById('qrScanner').style.display = 'flex';
+
+            const qrBoxSize = Math.min(window.innerWidth, window.innerHeight) * 0.7;
+
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: { width: qrBoxSize, height: qrBoxSize }
+                },
+                onQRCodeSuccess,
+                onQRCodeError
+            ).catch((err) => {
+                console.error(`QR Code Scanner init error: ${err}`);
+                alert('Не удалось запустить сканер QR-кода. Пожалуйста, убедитесь, что у приложения есть доступ к камере.');
+                cancelQRScanner();
+            });
+        }
+
+        function cancelQRScanner() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('qrScanner').style.display = 'none';
+                }).catch((err) => {
+                    console.error(`Failed to stop QR Code scanner: ${err}`);
+                });
+            } else {
+                document.getElementById('qrScanner').style.display = 'none';
+            }
+        }
+
+        function onQRCodeSuccess(decodedText, decodedResult) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('qrScanner').style.display = 'none';
+                
+                if (decodedText.includes('polycoins')) {
+                    window.location.href = 'polycoins.html';
+                } else if (decodedText.includes('other_quest')) {
+                    alert('Другой квест пока не реализован');
+                } else {
+                    alert('Неизвестный QR-код');
+                }
+            }).catch((err) => {
+                console.error(`Failed to stop QR Code scanner: ${err}`);
+            });
+        }
+
+        function onQRCodeError(error) {
+            console.warn(`QR Code scanning failed: ${error}`);
+        }
+
+        function playConfetti() {
+            alert('Поздравляем тебя!!! Получи свои заслуженные 1000 PolyCoins! Мерч уже ждёт тебя в нашем магазине!')
+            if (navigator.vibrate) {
+                        navigator.vibrate(50);
+            }
+            confetti({
+                particleCount: 200,  // Количество частиц
+                spread: 160,         // Ширина разлета конфетти
+                origin: { x: 0.5, y: 0.5 }, // Центр анимации (по умолчанию - центр экрана)
+                zIndex: 9999         // Слой конфетти
+            });
+            addScore(1000);
+        }
+
+        // Загружаем глобальный счёт при загрузке страницы
+            window.onload = function() {
+            let globalScore = localStorage.getItem('globalScore') || 0;
+            document.getElementById('globalScore').textContent = globalScore;
+        }
+
+        // Функция для добавления очков
+        function addScore(points) {
+            let globalScore = localStorage.getItem('globalScore') || 0;
+            globalScore = parseInt(globalScore) + points;
+            localStorage.setItem('globalScore', globalScore);
+            document.getElementById('globalScore').textContent = globalScore;
+        }
+    </script>
+</body>
+</html>

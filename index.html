@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Cube Collector - Physical Movement</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <link rel="icon" href="./sources/LOGO.png" type="image/png"> <!-- Лого университета -->
+    <title>Квест ТПУ в дополненной реальности</title>
     <style>
         body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
         #startScreen, #qrScanner {
@@ -16,7 +14,6 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 1000;
         }
-        #qrScanner { display: none; }
         .button {
             margin: 15px 0; padding: 15px 30px; font-size: 24px; cursor: pointer;
             background-color: rgb(76, 175, 80); color: white; border: none; border-radius: 5px;
@@ -25,376 +22,108 @@
         .button:hover {
             background-color: #45a049;
         }
+
+
+        #scorePanel {
+            position: fixed; top: 20px; left: 20px; z-index: 1500;
+            display: flex; align-items: center;
+            background: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            cursor: pointer; /* Указываем, что это кликабельный элемент */
+        }
+        #scorePanel img {
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            pointer-events: none; /* Игнорировать события мыши */
+            -webkit-user-select: none; /* Отключаем выделение текста */
+            user-select: none; /* Отключаем выделение текста */
+        }
+        #scoreText {
+            color: rgb(76, 194, 76); /* Цвет "золотой" */
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Лёгкая тень */
+            pointer-events: none; /* Игнорировать события мыши */
+            -webkit-user-select: none; /* Отключаем выделение текста */
+            user-select: none; /* Отключаем выделение текста */
+        }
+
         #info {
             position: absolute; top: 30px; width: 100%; text-align: center; z-index: 100;
             color: white; font-family: Arial, sans-serif; font-size: 18px;
             text-shadow: 0 0 3px black;
         }
-        #reader { 
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-         }
-         #qrScannerOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            box-sizing: border-box;
-            z-index: 1001;
+        .title-text {
+            color: white;
+            font-size: x-large;
+            text-shadow: 5px 5px 5px rgba(0,0,0,0.5);
+            text-align: center;
+            border: black;
         }
-        #scannerGuide {
-            border: 2px solid #fff;
-            width: 250px;
-            height: 250px;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+        .logo {
+            max-width: 100px;
+            margin-bottom: 150px;
         }
     </style>
 </head>
 <body>
     <div id="startScreen">
-        <h3 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Счёт PolyCoins: <span id="globalScore">0</span></h3>
-        <img src="./sources/LOGO.png" alt="Image" style="max-width: 100px; margin-bottom: 100px;">
-        <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Собери свои PolyCoins</h1>
-        <button id="startButton" class="button">ЗАПУСТИТЬ AR КВЕСТ</button>
+        <img src="./sources/LOGO.png" alt="Image" class="logo">
+        <h1 class="title-text">Квесты в дополненной реальности</h1>
+        <button id="startButton" class="button" onclick="window.location.href='quests.html'"> ВЫБРАТЬ КВЕСТ</button>
         <button id="storeButton" class="button">МАГАЗИН МЕРЧА</button>
     </div>
-    <div id="qrScanner">
-        <div id="reader"></div>
-        <div id="qrScannerOverlay">
-            <div id="qrScannerHeader">Отсканируйте QR-код</div>
-            <div id="scannerGuide"></div>
-            <button id="cancelScan" class="button">Отмена</button>
-        </div>
+    <!-- Панель с отображением счета -->
+    <div id="scorePanel">
+        <div id="scoreText">Счёт: <span id="globalScore">0</span></div>
+        <img src="./sources/TPU-COIN_low.png" alt="Coin"> <!-- Изображение монетки -->
     </div>
-    <div id="info" style="display: none;">Собрано PolyCoins: <span id="currentScore">0</span></div>
     <script>
-        let camera, scene, renderer, frustum, cameraFrustum, glbModel; // Для отслеживания видимости объектов;
-        let objects = [], score = 0, globalScore = 0, time = 0;
-        let html5QrCode;
+        // Функция для увеличения глобального счёта и сохранения его в LocalStorage
+        function addScore(points) {
+            let globalScore = localStorage.getItem('globalScore') || 0;
+            globalScore = parseInt(globalScore) + points;
+            localStorage.setItem('globalScore', globalScore);
+            document.getElementById('globalScore').textContent = globalScore;
+        }
+        // Функция для очистки глобального счёта и сохранения его в LocalStorage
+        function clearScore() {
+            let globalScore = localStorage.getItem('globalScore') || 0;
+            globalScore = 0;
+            localStorage.setItem('globalScore', globalScore);
+            document.getElementById('globalScore').textContent = globalScore;
+        }
 
-        init();
+        // Загружаем глобальный счёт при загрузке страницы
+        window.onload = function() {
+            let globalScore = localStorage.getItem('globalScore') || 0;
+            document.getElementById('globalScore').textContent = globalScore;
+        }
 
-        function init() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+        // Обработка долгого нажатия на панель счёта
+        let holdTimeout;
+        const scorePanel = document.getElementById('scorePanel');
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.xr.enabled = true;
-            document.body.appendChild(renderer.domElement);
+        // Обработчики событий для мобильных устройств
+        scorePanel.addEventListener('touchstart', startLongPress);
+        scorePanel.addEventListener('touchend', () => {
+            clearTimeout(holdTimeout);
+        });
+        scorePanel.addEventListener('touchleave', () => {
+            clearTimeout(holdTimeout);
+        });
 
-            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 2);
-            scene.add(light);
-
-            const button = document.createElement('button');
-            button.id = 'arButton'; // Добавляем ID кнопке для управления
-            button.textContent = 'Завершить квест';
-            button.className = 'button'; // Добавляем класс 'button'
-            button.style.cssText = 'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);';
-            document.body.appendChild(button);
-
-            /*
-            document.getElementById('startButton').addEventListener('click', () => {
-
-                navigator.xr.requestSession('immersive-ar', {
-                    requiredFeatures: ['hit-test'],
-                    optionalFeatures: ['dom-overlay'],
-                    domOverlay: { root: document.body }
-                }).then(onSessionStarted);
-            });
-*/
-            document.getElementById('arButton').addEventListener('click', () => {
-                if (button.textContent === 'Завершить квест') {
-                    endSession(); // Завершение сессии по клику на "Завершить квест"
+        function startLongPress() {
+            holdTimeout = setTimeout(() => {
+                if (navigator.vibrate) {
+                    navigator.vibrate(50); // Вибрация на мобильных устройствах
                 }
-            });
-
-            // Загрузка GLB модели
-            const loader = new THREE.GLTFLoader();
-            loader.load('./models/coin_tpu.glb', (gltf) => {
-                glbModel = gltf.scene;
-                glbModel.scale.set(0.1, 0.1, 0.1); // Масштабирование модели
-
-                // Настраиваем материал модели для лучшего отражения света
-                glbModel.traverse((child) => {
-                    if (child.isMesh) {
-                        child.material.metalness = 0;
-                        child.material.roughness = 0;
-                    }
-                });
-            });
-
-            window.addEventListener('resize', onWindowResize, false);
-
-            // Добавляем подсветку на экран
-            const screenHighlight = document.createElement('div');
-            screenHighlight.id = 'screenHighlight';
-            screenHighlight.style.position = 'absolute';
-            screenHighlight.style.backgroundColor = 'rgb(76, 175, 80)';
-            screenHighlight.style.pointerEvents = 'none';
-            screenHighlight.style.display = 'none';
-            document.body.appendChild(screenHighlight);
-
-            frustum = new THREE.Frustum();
-            cameraFrustum = new THREE.Matrix4();
-
-            document.getElementById('startButton').addEventListener('click', startQRScanner);
-            document.getElementById('cancelScan').addEventListener('click', cancelQRScanner);
-        }
-
-        function startQRScanner() {
-            document.getElementById('startScreen').style.display = 'none';
-            document.getElementById('qrScanner').style.display = 'block';
-
-            const qrBoxSize = Math.min(window.innerWidth, window.innerHeight) * 0.7;
-
-            html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: { width: qrBoxSize, height: qrBoxSize }
-                },
-                onQRCodeSuccess,
-                onQRCodeError
-            ).catch((err) => {
-                console.error(`QR Code Scanner init error: ${err}`);
-                alert('Не удалось запустить сканер QR-кода. Пожалуйста, убедитесь, что у приложения есть доступ к камере.');
-                cancelQRScanner();
-            });
-        }
-
-        function cancelQRScanner() {
-            if (html5QrCode && html5QrCode.isScanning) {
-                html5QrCode.stop().then(() => {
-                    document.getElementById('qrScanner').style.display = 'none';
-                    document.getElementById('startScreen').style.display = 'flex';
-                }).catch((err) => {
-                    console.error(`Failed to stop QR Code scanner: ${err}`);
-                });
-            } else {
-                document.getElementById('qrScanner').style.display = 'none';
-                document.getElementById('startScreen').style.display = 'flex';
-            }
-        }
-
-        function onQRCodeSuccess(decodedText, decodedResult) {
-            html5QrCode.stop().then(() => {
-                document.getElementById('qrScanner').style.display = 'none';
-                
-                if (decodedText.includes('polycoins')) {
-                    startARSession('polycoins');
-                } else if (decodedText.includes('other_quest')) {
-                    alert('Другой квест пока не реализован');
-                    document.getElementById('startScreen').style.display = 'flex';
-                } else {
-                    alert('Неизвестный QR-код');
-                    document.getElementById('startScreen').style.display = 'flex';
-                }
-            }).catch((err) => {
-                console.error(`Failed to stop QR Code scanner: ${err}`);
-            });
-        }
-
-        function onQRCodeError(error) {
-            console.warn(`QR Code scanning failed: ${error}`);
-        }
-
-        function startARSession(mode) {
-            if (mode === 'polycoins') {
-                navigator.xr.requestSession('immersive-ar', {
-                    requiredFeatures: ['hit-test'],
-                    optionalFeatures: ['dom-overlay'],
-                    domOverlay: { root: document.body }
-                }).then(onSessionStarted);
-            }
-        }
-
-        function endSession() {
-            // Завершаем AR-сессию
-            const session = renderer.xr.getSession();
-            if (session) {
-                session.end(); // Завершить текущую сессию
-            }
-        }
-
-        function onSessionStarted(session) {
-            score = 0;
-            document.getElementById('currentScore').textContent = score; // Отображаем текущий счет
-            renderer.xr.setSession(session);
-            renderer.xr.setReferenceSpaceType('local');
-            session.addEventListener('end', onSessionEnded);
-            createObject();
-            renderer.setAnimationLoop(render);
-            document.getElementById('info').style.display = 'block';
-            document.getElementById('startScreen').style.display = 'none';
-        }
-
-        function onSessionEnded() {
-            renderer.setAnimationLoop(null);
-
-            globalScore += score;
-            // Удаляем все объекты из сцены
-            objects.forEach((object) => {
-                scene.remove(object);
-            });
-            objects = []; // Очищаем массив объектов
-
-            // Показываем начальный экран и текущий счет
-            document.getElementById('startScreen').style.display = 'flex';
-            document.getElementById('globalScore').textContent = globalScore; // Отображаем глобальный счет
-            document.getElementById('info').style.display = 'none'; // Скрываем элемент информации
-        }
-
-        function createObject() {
-            if (!glbModel) return;
-
-            const object = glbModel.clone();
-
-            const cameraPosition = new THREE.Vector3();
-            camera.getWorldPosition(cameraPosition);
-
-            object.position.set(
-                cameraPosition.x + (Math.random() - 0.5) * 2,
-                cameraPosition.y + Math.random() * 0.5 - 0.25,
-                cameraPosition.z + (Math.random() - 0.5) * 2
-            );
-
-            object.initialY = object.position.y;
-
-            scene.add(object);
-            objects.push(object);
-        }
-
-        function checkObjectCollection() {
-            const cameraPosition = new THREE.Vector3();
-            camera.getWorldPosition(cameraPosition);
-
-            objects.forEach((object, index) => {
-                if (object.position.distanceTo(cameraPosition) < 0.2) {
-                    scene.remove(object);
-                    objects.splice(index, 1);
-                    score++;
-                    document.getElementById('currentScore').textContent = score;
-
-                    if (navigator.vibrate) {
-                        navigator.vibrate(200);
-                    }
-
-                    createObject();
-                }
-            });
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function updateHighlightVisibility() {
-            // Обновление матрицы камеры и фрустума
-            camera.updateMatrix();
-            camera.updateMatrixWorld();
-            cameraFrustum.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-            frustum.setFromProjectionMatrix(cameraFrustum);
-
-            let isVisible = false;
-            let closestObject = null;
-
-            objects.forEach((object) => {
-                if (!frustum.containsPoint(object.position)) {
-                    isVisible = true;
-                    closestObject = object;
-                }
-            });
-
-            const highlight = document.getElementById('screenHighlight');
-            if (isVisible && closestObject) {
-                // Преобразуем координаты объекта в 2D-координаты экрана
-                const objectPosition = closestObject.position.clone();
-                const screenPosition = new THREE.Vector3();
-                screenPosition.copy(objectPosition).project(camera);
-
-                // Проверяем нормализованные координаты экрана [-1, 1]
-                const x = screenPosition.x;
-                const y = screenPosition.y;
-
-                // Определяем, на каком краю экрана находится объект
-                highlight.style.display = 'block';
-                highlight.style.width = 'auto';
-                highlight.style.height = 'auto';
-
-                const padding = 0.1; // Порог для близости к краям экрана
-
-                // Определяем край экрана для подсветки
-                if (x < -1 + padding) {
-                    // Левый край
-                    highlight.style.top = '0';
-                    highlight.style.bottom = '0';
-                    highlight.style.left = '0';
-                    highlight.style.width = '10px';
-                    highlight.style.height = '100%';
-                    highlight.style.right = 'auto';
-                    highlight.style.background = 'linear-gradient(to right, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0))';
-                } else if (x > 1 - padding) {
-                    // Правый край
-                    highlight.style.top = '0';
-                    highlight.style.bottom = '0';
-                    highlight.style.right = '0';
-                    highlight.style.width = '10px';
-                    highlight.style.height = '100%';
-                    highlight.style.left = 'auto';
-                    highlight.style.background = 'linear-gradient(to left, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0))';
-                } else if (y > -1 + padding) {
-                    // Верхний край
-                    highlight.style.top = '0';
-                    highlight.style.left = '0';
-                    highlight.style.right = '0';
-                    highlight.style.height = '10px';
-                    highlight.style.width = '100%';
-                    highlight.style.bottom = 'auto';
-                    highlight.style.background = 'linear-gradient(to bottom, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0))';
-                } else if (y < 1 - padding) {
-                    // Нижний край
-                    highlight.style.bottom = '0';
-                    highlight.style.left = '0';
-                    highlight.style.right = '0';
-                    highlight.style.height = '10px';
-                    highlight.style.width = '100%';
-                    highlight.style.top = 'auto';
-                    highlight.style.background = 'linear-gradient(to top, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0))';
-                } else {
-                    highlight.style.display = 'none'; // Если объект в поле зрения, скрываем подсветку
-                }
-            } else {
-                highlight.style.display = 'none';
-            }
-        }
-
-        function render() {
-            time += 0.06;
-            objects.forEach(object => {
-                object.rotation.y += 0.04;
-                object.position.y = object.initialY + Math.sin(time) * 0.05;
-            });
-            checkObjectCollection();
-            updateHighlightVisibility();
-            renderer.render(scene, camera);
+                clearScore(); // Очищаем счёт при долгом нажатии
+            }, 1000); // Долгое нажатие = 1 секунда
         }
     </script>
 </body>
