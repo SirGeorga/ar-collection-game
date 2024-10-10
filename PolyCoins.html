@@ -23,25 +23,59 @@
         .button:hover {
             background-color: #45a049;
         }
-        #info {
-            position: absolute; top: 30px; width: 100%; text-align: center; z-index: 100;
-            color: white; font-family: Arial, sans-serif; font-size: 18px;
-            text-shadow: 0 0 3px black;
-        }
+
         #screenHighlight {
             position: absolute;
             pointer-events: none;
             display: none;
         }
+        #counterPanel {
+            position: fixed; top: 20px; left: 20px; z-index: 1500;
+            left: 50%;
+            transform: translate(-50% );
+            display: flex; align-items: center;
+            background: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+        }
+        #counter {
+            color: rgb(76, 194, 76); /* Цвет "золотой" */
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Лёгкая тень */
+        }
+        #infoPanel {
+            display: flex; align-items: center;
+            background: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+            padding: 50px 50px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        #infoText {
+            color: white; /* Цвет "золотой" */
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Лёгкая тень */
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <div id="startScreen">
-        <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Квест PolyCoins</h1>
+        <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Квест "Собери их все!"</h1>
+        <div id="infoPanel">
+            <div id="infoText">Цель квеста - собрать все PolyCoins, которые будут появляться вокруг тебя. Внимательно смотри по сторонам и следуй за ними, кто знает, может они тебя куда-нибудь приведут :)</div>
+        </div>
         <button id="startButton" class="button">НАЧАТЬ КВЕСТ</button>
         <button id="backButton" class="button" onclick="window.location.href='quests.html'">НАЗАД</button>
     </div>
-    <div id="info" style="display: none;">Собрано PolyCoins: <span id="currentScore">0</span></div>
+    <div id="counterPanel" style="display: none;">
+        <div id="counter">Собрано PolyCoins: <span id="currentScore">0</span></div>
+    </div>
     <div id="screenHighlight"></div>
     <script>
         let camera, scene, renderer, frustum, cameraFrustum, glbModel;
@@ -115,7 +149,7 @@
             session.addEventListener('end', onSessionEnded);
             createObject();
             renderer.setAnimationLoop(render);
-            document.getElementById('info').style.display = 'block';
+            document.getElementById('counterPanel').style.display = 'block';
             document.getElementById('startScreen').style.display = 'none';
             document.getElementById('arButton').style.display = 'block';
         }
@@ -134,7 +168,7 @@
             });
             objects = [];
             document.getElementById('startScreen').style.display = 'flex';
-            document.getElementById('info').style.display = 'none';
+            document.getElementById('counterPanel').style.display = 'none';
             document.getElementById('arButton').style.display = 'none';
             alert(`Квест завершен! Вы собрали ${score} PolyCoins.`);
             addScore(score)

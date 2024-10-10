@@ -1,53 +1,173 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AR с анимацией галочки</title>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.js"></script>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        #counter {
+        #debug {
             position: fixed;
-            top: 10px;
-            left: 10px;
             z-index: 1000;
             font-size: 24px;
             color: white;
             background-color: rgba(0,0,0,0.5);
             padding: 10px;
         }
+        #debug { bottom: 10px; left: 10px; display: none;}
+        .button {
+            margin: 15px 0; padding: 15px 30px; font-size: 24px; cursor: pointer;
+            background-color: rgb(76, 175, 80); color: white; border: none; border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        #counterPanel {
+            position: fixed; top: 20px; left: 20px; z-index: 1500;
+            left: 50%;
+            transform: translate(-50% );
+            display: flex; align-items: center;
+            background: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+        }
+        #counter {
+            color: rgb(76, 194, 76); /* Цвет "золотой" */
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Лёгкая тень */
+        }
+
+        #startScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('./sources/BACKGROUND.jpg');
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+
+        #infoPanel {
+            display: flex; align-items: center;
+            background: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+            padding: 50px 50px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        #infoText {
+            color: white; /* Цвет "золотой" */
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Лёгкая тень */
+            text-align: center;
+        }
+
     </style>
 </head>
 <body>
-    <div id="counter">Найдено: 0</div>
-    <a-scene mindar-image="imageTargetSrc: ./mind-files/targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <div id="startScreen">
+        <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); text-align: center;">Квест "Собери все мотиваторы в ГК!"</h1>
+        <div id="infoPanel">
+            <div id="infoText">Цель квеста - найти все мотивирующие картинки, которые висят на стенах в коридорах главного корпуса ТПУ. 
+                Придётся побегать по всем трём этажам. Не пропусти ни одной, каждая имеет значение :)</div>
+        </div>
+        <button id="startButton" class="button">НАЧАТЬ КВЕСТ</button>
+        <button id="backButton" class="button" onclick="window.location.href='quests.html'">НАЗАД</button>
+    </div>
+    <div id="counterPanel" style="display: none;">
+        <div id="counter">Найдено: 0 / 3</div>
+    </div>
+    <div id="debug"></div>
+    <a-scene mindar-image="imageTargetSrc: ./mind-files/targets.mind; uiScanning: no;" ; color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        <a-assets>
+            <img id="check_mark" src="./sources/check_ic.png" title="check mark">
+        </a-assets>
         <a-entity mindar-image-target="targetIndex: 0">
-            <a-box position="0 0.1 0" scale="0.3 0.3 0.3" color="red" animation="property: rotation; to: 0 360 0; dur: 1000; easing: linear; loop: true"></a-box>
+            <a-image src="#check_mark" position="0 0 0" height="1" width="1"></a-image>
         </a-entity>
         <a-entity mindar-image-target="targetIndex: 1">
-            <a-sphere position="0 0.1 0" radius="0.15" color="blue" animation="property: scale; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"></a-sphere>
+            <a-image src="#check_mark" position="0 0 0" height="1" width="1"></a-image>
         </a-entity>
         <a-entity mindar-image-target="targetIndex: 2">
-            <a-cone position="0 0.1 0" radius-bottom="0.2" radius-top="0" height="0.3" color="green" animation="property: position; to: 0 0.3 0; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"></a-cone>
+            <a-image src="#check_mark" position="0 0 0" height="1" width="1"></a-image>
         </a-entity>
     </a-scene>
-
+    
     <script>
+
+        document.getElementById('startButton').addEventListener('click', startARSession);
+        const targetAmount = 3;
+        const award = 150;
         const counter = document.getElementById('counter');
+        const debug = document.getElementById('debug');
         let foundCount = 0;
         const foundTargets = new Set();
 
         const sceneEl = document.querySelector('a-scene');
         const targetEntities = sceneEl.querySelectorAll('[mindar-image-target]');
 
+        
+        init();
+        function init() {
+            const button = document.createElement('button');
+            button.id = 'endQuest';
+            button.textContent = 'Завершить квест';
+            button.className = 'button';
+            button.style.cssText = 'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: block;';
+            document.body.appendChild(button);
+            document.getElementById('endQuest').addEventListener('click', exitAR);
+        }
+
+        function startARSession() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('counterPanel').style.display = 'block';
+        }
+
+        function exitAR() {
+            // Остановка AR системы
+            const mindARComponent = sceneEl.components['imageTargetSrc'];
+            if (mindARComponent) {
+                mindARComponent.stop();
+            }
+            // Перенаправление на страницу quests.html
+            window.location.href = 'quests.html';
+        }
+
+        // Функция для увеличения глобального счёта и сохранения его в LocalStorage
+        function addScore(points) {
+            let globalScore = localStorage.getItem('globalScore') || 0;
+            globalScore = parseInt(globalScore) + points;
+            localStorage.setItem('globalScore', globalScore);
+        }
+
+
         targetEntities.forEach((entity, index) => {
+            const pngImage = entity.querySelector('a-image');
+            
             entity.addEventListener('targetFound', () => {
+                debug.textContent = `Цель ${index} найдена`;
                 if (!foundTargets.has(index)) {
                     foundTargets.add(index);
                     foundCount++;
-                    counter.textContent = `Найдено: ${foundCount}`;
+                    counter.textContent = `Найдено: ${foundCount} / ${targetAmount}`;
+                    debug.textContent += `, Воспроизводится видео ${index}`;
                 }
+                if (targetAmount == foundCount){
+                    addScore(award);
+                    alert(`Все мотиваторы найдены! Теперь ты замотивирован на свершения как никогда :) А чтобы к ним было приятнее стремиться - держи заслуженные ${award} PolyCoins и загляни в наш магазине мерча!`);
+                    exitAR();
+                }
+            });
+
+            entity.addEventListener('targetLost', () => {
+                debug.textContent = `Цель ${index} потеряна`;
             });
         });
     </script>
