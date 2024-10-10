@@ -168,7 +168,7 @@
 
     <script>
         let html5QrCode;
-
+        let clickCount = 1;
         function startQRScanner() {
             document.getElementById('qrScanner').style.display = 'flex';
 
@@ -223,17 +223,30 @@
         }
 
         function playConfetti() {
-            alert('Поздравляем тебя!!! Получи свои заслуженные 1000 PolyCoins! Мерч уже ждёт тебя в нашем магазине!')
-            if (navigator.vibrate) {
-                        navigator.vibrate(50);
+            switch(clickCount){
+                case 1: alert('Приёмная кампания ещё не началась, попробуй позже!'); 
+                break;
+                case 2: alert('Кого ты хочешь обмануть? Всё ещё рано! Попробуй позже!'); 
+                break;
+                case 3: alert('Тебе правда так сильно нужны эти коины? Ну хорошо...'); 
+                break;
+                case 4: 
+                    alert('Поздравляем тебя!!! Получи свои заслуженные 1000 PolyCoins! Мерч уже ждёт тебя в нашем магазине!')
+                    if (navigator.vibrate) {
+                                navigator.vibrate(50);
+                    }
+                    confetti({
+                        particleCount: 200,  // Количество частиц
+                        spread: 160,         // Ширина разлета конфетти
+                        origin: { x: 0.5, y: 0.5 }, // Центр анимации (по умолчанию - центр экрана)
+                        zIndex: 9999         // Слой конфетти
+                    });
+                    addScore(1000);
+                    break;
+                default: alert('Ты уже поступил! PolyCoins на твоём счету!'); 
+                break;
             }
-            confetti({
-                particleCount: 200,  // Количество частиц
-                spread: 160,         // Ширина разлета конфетти
-                origin: { x: 0.5, y: 0.5 }, // Центр анимации (по умолчанию - центр экрана)
-                zIndex: 9999         // Слой конфетти
-            });
-            addScore(1000);
+            clickCount++;
         }
 
         // Загружаем глобальный счёт при загрузке страницы
