@@ -74,7 +74,7 @@
     <div id="startScreen">
         <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); text-align: center;">Квест "Собери все мотиваторы в ГК!"</h1>
         <div id="infoPanel">
-            <div id="infoText">Цель квеста - найти все мотивирующие картинки, которые висят на стенах в коридорах главного корпуса ТПУ. 
+            <div id="infoText">Цель квеста - найти все мотивирующие картинки (мотиваторы), которые висят на стенах в коридорах главного корпуса ТПУ. 
                 Придётся побегать по всем трём этажам. Не пропусти ни одной, каждая имеет значение :)</div>
         </div>
         <button id="startButton" class="button">НАЧАТЬ КВЕСТ</button>
@@ -85,18 +85,18 @@
     </div>
     <div id="debug"></div>
     <a-scene mindar-image="imageTargetSrc: ./mind-files/targets.mind; uiScanning: no;" ; color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: ${customFields.libVersion}; objects: .clickable"></a-camera>
         <a-assets>
             <img id="check_mark" src="./sources/check_ic.png" title="check mark">
         </a-assets>
         <a-entity mindar-image-target="targetIndex: 0">
-            <a-image src="#check_mark" position="0 0 0" height="1" width="1"></a-image>
+            <a-image src="#check_mark" position="0 0 0" height="1" width="1" class="clickable"></a-image>
         </a-entity>
         <a-entity mindar-image-target="targetIndex: 1">
-            <a-image src="#check_mark" position="0 0 0" height="1" width="1"></a-image>
+            <a-image src="#check_mark" position="0 0 0" height="1" width="1" class="clickable"></a-image>
         </a-entity>
         <a-entity mindar-image-target="targetIndex: 2">
-            <a-image src="#check_mark" position="0 0 0" height="1" width="1"></a-image>
+            <a-image src="#check_mark" position="0 0 0" height="1" width="1" class="clickable"></a-image>
         </a-entity>
     </a-scene>
     
@@ -150,7 +150,10 @@
 
         targetEntities.forEach((entity, index) => {
             const pngImage = entity.querySelector('a-image');
-            
+        
+            entity.addEventListener("click", () => {
+                handleClickOnTarget();
+            });
             entity.addEventListener('targetFound', () => {
                 debug.textContent = `Цель ${index} найдена`;
                 if (!foundTargets.has(index)) {
@@ -165,11 +168,14 @@
                     exitAR();
                 }
             });
-
-            entity.addEventListener('targetLost', () => {
-                debug.textContent = `Цель ${index} потеряна`;
-            });
         });
+        // Функция для обработки клика по найденной картинке
+        function handleClickOnTarget() {
+            if (navigator.vibrate) {
+                    navigator.vibrate(50);
+            }
+            // Здесь можно выполнить любое действие
+        }
     </script>
 </body>
 </html>
