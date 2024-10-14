@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PolyCoins Quest - AR Cube Collector</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.5/dist/mindar-image-three.prod.js"></script>
+    <style>
+        body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+        #startScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('./sources/BACKGROUND.jpg');
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .button {
+            margin: 15px 0; padding: 15px 30px; font-size: 24px; cursor: pointer;
+            background-color: rgb(76, 175, 80); color: white; border: none; border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        #counterPanel {
+            position: fixed; top: 20px; left: 50%;
+            transform: translate(-50%);
+            z-index: 1500;
+            display: flex; align-items: center;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+        }
+        #counter {
+            color: rgb(76, 194, 76);
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Квест "Собери их все!"</h1>
+        <div id="infoPanel">
+            <div id="infoText">Цель квеста - собрать все PolyCoins, которые появятся после сканирования изображения. Внимательно смотри по сторонам и следуй за ними!</div>
+        </div>
+        <button id="startButton" class="button">НАЧАТЬ КВЕСТ</button>
+        <button id="backButton" class="button" onclick="window.location.href='quests.html'">НАЗАД</button>
+    </div>
+    <div id="counterPanel" style="display: none;">
+        <div id="counter">Собрано PolyCoins: <span id="currentScore">0</span></div>
+    </div>
+    <script>
+        let mindarThree;
+        let glbModel, imageAnchor;
+        let objects = [], score = 0, time = 0;
+
+        const startButton = document.getElementById('startButton');
+        const counterPanel = document.getElementById('counterPanel');
+        const startScreen = document.getElementById('startScreen');
+
+        startButton.addEventListener('click', startExperience);
+
+        async function startExperience() {
+            startScreen.style.display = 'none';
+            counterPanel.style.display = 'block';
+
+            mindarThree = new window.MINDAR.IMAGE.MindARThree({
+                container: document.body,
+                imageTargetSrc: './mind-files/targets.mind', // Путь к файлу с целевым изображением
+            });
+
+            const { renderer, scene, camera } = mindarThree;
+
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+            scene.add(light);
+
+            // Загрузка 3D модели монетки
+            const loader = new THREE.GLTFLoader();
+            loader.load('./models/coin_tpu.glb', (gltf) => {
+                glbModel = gltf.scene;
+                glbModel.scale.set(0.1, 0.1, 0.1);
+                glbModel.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.metalness = 0;
+                        child.material.roughness = 0;
+                    }
+                });
+                createCoins();
+            });
+
+            const anchor = mindarThree.addAnchor(0);
+            anchor.onTargetFound = () => {
+                console.log("Изображение найдено");
+                if (objects.length === 0) {
+                    createCoins();
+                }
+            };
+
+            await mindarThree.start();
+            renderer.setAnimationLoop(render);
+        }
+
+        function createCoins() {
+            if (!glbModel) return;
+
+            const numCoins = 5;
+            const spacing = 0.2;
+
+            for (let i = 0; i < numCoins; i++) {
+                const coin = glbModel.clone();
+                coin.position.set(
+                    (i - (numCoins - 1) / 2) * spacing,
+                    0,
+                    -0.5 - Math.random() * 0.5
+                );
+                coin.initialY = coin.position.y;
+                objects.push(coin);
+                mindarThree.scene.add(coin);
+            }
+
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+        }
+
+        function checkCoinCollection() {
+            const cameraPosition = new THREE.Vector3();
+            mindarThree.camera.getWorldPosition(cameraPosition);
+
+            objects.forEach((coin, index) => {
+                if (coin.position.distanceTo(cameraPosition) < 0.2) {
+                    mindarThree.scene.remove(coin);
+                    objects.splice(index, 1);
+                    score++;
+                    document.getElementById('currentScore').textContent = score;
+
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200);
+                    }
+
+                    if (objects.length === 0) {
+                        createCoins();
+                    }
+                }
+            });
+        }
+
+        function render() {
+            time += 0.06;
+            objects.forEach(coin => {
+                coin.rotation.y += 0.04;
+                coin.position.y = coin.initialY + Math.sin(time) * 0.05;
+            });
+            checkCoinCollection();
+            mindarThree.renderer.render(mindarThree.scene, mindarThree.camera);
+        }
+    </script>
+</body>
+</html>

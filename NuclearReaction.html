@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebXR AR Shooting Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <style>
+        body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+        canvas { display: block; }
+        #startScreen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;    
+            max-height: 100%; /* Limit height to viewport */
+            overflow-y: auto; /* Enable vertical scrolling */
+            background-image: url('./sources/BACKGROUND.jpg');
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .button {
+            margin: 15px 0; padding: 15px 30px; font-size: 24px; cursor: pointer;
+            background-color: rgb(76, 175, 80); color: white; border: none; border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .back-button {
+            margin: 15px 0; padding: 15px 30px; font-size: 24px; cursor: pointer;
+            background-color: rgb(19, 117, 22);; color: white; border: none; border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #infoPanel {
+            display: flex; align-items: center;
+            background: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+            padding: 50px 50px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        #infoText {
+            color: white; /* Цвет "золотой" */
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Лёгкая тень */
+            text-align: center;
+        }        
+
+        #counterPanel {
+            position: fixed; top: 20px; left: 20px; z-index: 1500;
+            left: 50%;
+            transform: translate(-50% );
+            display: flex; align-items: center;
+            background: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+        }
+        #ammoCounter {
+            color: rgb(76, 194, 76); /* Цвет "золотой" */
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Лёгкая тень */
+        }
+        
+        
+
+        #geigerContainer {
+            position: absolute; 
+            left: 10px; 
+            bottom: 50px; /* Изменено с top на bottom */
+            width: 20px; 
+            height: 80%;
+            background-color: transparent; 
+            background: rgba(0, 0, 0, 0.5); 
+            border-radius: 15px; 
+            overflow: hidden;
+            display: flex;
+            flex-direction: column-reverse; /* Добавлено для правильного направления заполнения */
+        }
+        #geigerCounter {
+            height: 0%; 
+            width: 100%; 
+            background-color: transparent; 
+            display: none;
+        }
+
+        #progressContainer {
+            position: fixed; 
+            bottom: 50px; 
+            right: 5px; 
+            width: 20px; 
+            height: 80%; 
+            background: rgba(0, 0, 0, 0.5); 
+            border-radius: 15px; 
+            overflow: hidden;
+            display: flex;
+            flex-direction: column-reverse; /* Добавлено для правильного направления заполнения */
+        }
+        #reactionBar {
+            height: 0%; 
+            width: 100%; 
+            background: rgb(76, 175, 80);
+        }
+
+        #geigerIcon {
+            width: 36px;
+            height: auto;
+            display: block;
+            position: absolute; /* Добавлено */
+            bottom: 0; /* Добавлено */
+            left: 15px; /* Добавлено */
+            transform: translateX(-50%); /* Добавлено для центрирования */
+        }
+
+        #reactionIcon {
+            width: 36px;
+            height: auto;
+            display: block;
+            position: absolute; /* Добавлено */
+            bottom: 0; /* Добавлено */
+            right: 0px; /* Добавлено */
+        }
+
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); text-align: center;">Квест "Запусти ядерную реакцию!"</h1>
+        <div id="infoPanel">
+            <div id="infoText">Твоя задача - ни много ни мало - запустить цепную ядерную реакцию. В твоём распоряжении источник нейтронов (твой телефон). 
+                Целься им в атомы Урана-235 и стреляй, нажимая на экран. Счётчик Гейгера внизу экрана подскажет как далеко ты от Урана. 
+                Нужно успеть набрать критическую массу, пока нейтроны не поглотились средой. 
+                И следи за количеством доступных нейтронов, они всё-таки казённые.. </div>
+        </div>
+        <button id="startAR" class="button">НАЧАТЬ КВЕСТ</button>
+        <button id="backButton" class="back-button" onclick="window.location.href='quests.html'">НАЗАД</button>
+    </div>
+    <div id="counterPanel" style="display: none;">
+        <div id="ammoCounter">Осталось нейтронов: 20</div>
+    </div>
+    <div>
+        <div id="geigerContainer">
+            <div id="geigerCounter"></div>
+        </div>
+        <img id="geigerIcon" src="./sources/geiger_ic.png" alt="Geiger Icon">
+    </div>
+    <div>
+        <div id="progressContainer">
+            <div id="reactionBar"></div>
+        </div>
+        <img id="reactionIcon" src="./sources/nuc_reaction_ic.png" alt="Geiger Icon">
+    </div>
+    <script>
+        let camera, scene, renderer, controller, geigerCounterArrow;;
+        let reticle, target;
+        let bullets = [];
+        let ammoCount = 20;
+        const award = 100;
+        let reactionProgress = 20;
+        const progressDecreaseInterval = 2000; // Интервал уменьшения прогресса в миллисекундах
+        const progressDecreaseStep = -1; // Интервал уменьшения прогресса в миллисекундах
+        const progressIncreaseStep = 15; // Интервал уменьшения прогресса в миллисекундах
+        let intervalId; // Идентификатор интервала
+
+        init();
+
+        function init() {
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+            scene.add(light);
+
+            const finishButton = document.createElement('button');
+            finishButton.id = 'finishButton';
+            finishButton.textContent = 'Завершить квест';
+            finishButton.className = 'button';
+            finishButton.style.cssText = 'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none;';
+            document.body.appendChild(finishButton);
+            // Create reticle
+            reticle = new THREE.Mesh(
+                new THREE.RingGeometry(0.015, 0.02, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial()
+            );
+            reticle.matrixAutoUpdate = false;
+            reticle.visible = false;
+            scene.add(reticle);
+
+            // Create target
+            const loader = new THREE.GLTFLoader();
+            loader.load('./models/uranium.glb', function (gltf) {
+                target = gltf.scene;
+                target.position.set(0, 0, -0.5);
+                target.scale.set(0.01, 0.01, 0.01); // Установите нужный масштаб
+                scene.add(target);
+            });
+
+            controller = renderer.xr.getController(0);
+            controller.addEventListener('select', onSelect);
+            scene.add(controller);
+
+            const button = document.getElementById('startAR');
+            button.addEventListener('click', onStartAR);
+
+            document.getElementById('finishButton').addEventListener('click', endSession);
+
+            window.addEventListener('resize', onWindowResize, false);
+
+            renderer.setAnimationLoop(render);
+        }
+
+        function onStartAR() {
+            document.getElementById('counterPanel').style.display = 'block';
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('finishButton').style.display = 'block';
+            document.getElementById('geigerCounter').style.display = 'block';
+            navigator.xr.requestSession('immersive-ar', {
+                requiredFeatures: ['hit-test'],
+                optionalFeatures: ['dom-overlay'],
+                domOverlay: { root: document.body }
+            }).then(onSessionStarted);
+        }
+
+        function onSessionStarted(session) {
+            renderer.xr.setReferenceSpaceType('local');
+            renderer.xr.setSession(session);
+            document.getElementById('startAR').style.display = 'none';
+            session.addEventListener('end', onSessionEnded);
+            
+            intervalId = setInterval(decreaseReactionProgress, progressDecreaseInterval);
+        }
+
+        function endSession() {
+            const session = renderer.xr.getSession();
+            if (session) {
+                session.end();
+            }
+        }
+
+        function onSessionEnded() {
+            renderer.setAnimationLoop(null);
+            // if (target) {
+            //     scene.remove(target); // Удаляем цель из сцены
+            //     target = null; // Обнуляем переменную target
+            // }
+            // document.getElementById('startScreen').style.display = 'flex';
+            // document.getElementById('startAR').style.display = 'flex';
+            // document.getElementById('counterPanel').style.display = 'none';
+            // document.getElementById('finishButton').style.display = 'none';
+            window.location.href='quests.html'
+            if (reactionProgress == 100){
+                alert(`Квест завершен! Вы запустили цепную реакцию!`);
+                addScore(award);
+                return;
+            }
+            if (ammoCount < 0){
+                alert(`Квест завершен! К сожалению, тебе не удалось запустить реакцию! Все нейтроны растрачены`);
+                return;
+            }
+        }
+
+        function onSelect() {
+            ammoCount--;
+            if (ammoCount > -1) { // Проверяем, остались ли патроны
+                const bullet = new THREE.Mesh(
+                new THREE.SphereGeometry(0.01, 32, 32),
+                new THREE.MeshPhongMaterial({ color: 0x00ff00 })
+                );
+
+                // Позиция пули в центре экрана (в позиции камеры)
+                bullet.position.copy(camera.position);
+
+                // Направление пули — в направлении взгляда камеры
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                
+                // Добавляем пулю в сцену
+                scene.add(bullet);
+
+                // Задаем движение пули
+                bullets.push({ mesh: bullet, velocity: direction.multiplyScalar(0.1) });
+
+                updateAmmoCounter(); // Обновление количества пуль)
+            } else {
+                endSession();
+            }
+        }
+
+        function updateBullets() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                bullet.mesh.position.add(bullet.velocity);
+
+                // Проверка столкновения с целью
+                if (bullet.mesh.position.distanceTo(target.position) < 0.05) {
+                    // Удаление пули
+                    scene.remove(bullet.mesh);
+                    bullets.splice(i, 1);
+
+                    updateReactionProgress(progressIncreaseStep);
+                    // Создание взрыва в позиции цели
+                    createExplosion(target.position);
+
+                    // Создание конфетти, разлетающегося от направления пули
+                    createConfetti(target.position, bullet.velocity.clone().normalize());
+
+                    // Перемещение цели на новое место
+                    target.position.set(
+                        Math.random() * 2 - 1,
+                        Math.random() * 2 - 1,
+                        Math.random() * -2
+                    );
+                }
+
+                // Удаление пули, если она слишком далеко
+                if (bullet.mesh.position.length() > 5) {
+                    scene.remove(bullet.mesh);
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function updateGeigerCounterArrow() {
+            if (target) {
+                const distance = camera.position.distanceTo(target.position);
+                
+                const maxHeight = 100; // Максимальная высота в пикселях
+                const minHeight = 1;   // Минимальная высота в пикселях
+                const minDistance = 0.1; // Расстояние для максимальной высоты
+                const maxDistance = 2;   // Расстояние для минимальной высоты
+
+                // Нормируем высоту стрелки
+                let height;
+                if (distance < minDistance) {
+                    height = maxHeight; // Если ближе чем minDistance, максимальная высота
+                } else if (distance >= maxDistance) {
+                    height = minHeight; // Если дальше чем maxDistance, минимальная высота
+                } else {
+                    height = maxHeight - ((distance - minDistance) / (maxDistance - minDistance)) * (maxHeight - minHeight);
+                }
+
+                // Изменение цвета стрелки от зеленого до красного
+                const colorStart = new THREE.Color(0xff0000); // Красный
+                const colorEnd = new THREE.Color(0x00ff00); // Зеленый
+                
+                // Вычисление интерполяции цвета
+                let t = Math.min(1, (distance - minDistance) / (maxDistance - minDistance));
+                const currentColor = colorStart.clone().lerp(colorEnd, t); // Интерполяция цвета
+
+                // Позиция и стилизация стрелки
+                const geigerCounter = document.getElementById('geigerCounter');
+                geigerCounter.style.height = `${height}%`;
+                geigerCounter.style.backgroundColor = `rgb(${Math.floor(currentColor.r * 255)}, ${Math.floor(currentColor.g * 255)}, ${Math.floor(currentColor.b * 255)})`;
+
+                // Угол поворота стрелки
+            }
+        }
+
+        function updateAmmoCounter() {
+            const ammoCounter = document.getElementById('ammoCounter');
+            ammoCounter.textContent = `Осталось нейтронов: ${ammoCount}`;
+
+            // Определение цветов
+            const colorStart = new THREE.Color(0x00ff00); // Зеленый
+            const colorEnd = new THREE.Color(0xff0000); // Красный
+
+            // Нормируем значение количества патронов
+            let t = Math.min(1, (10 - ammoCount) / 10); // 10 - максимальное количество патронов
+            const currentColor = colorStart.clone().lerp(colorEnd, t); // Интерполяция цвета
+
+            // Обновление цвета счётчика
+            ammoCounter.style.color = `rgb(${Math.floor(currentColor.r * 255)}, ${Math.floor(currentColor.g * 255)}, ${Math.floor(currentColor.b * 255)})`;
+        }
+
+        function updateReactionProgress(increaseAmount = 0) {
+            const reactionBar = document.getElementById('reactionBar');
+
+            // Увеличение прогресса
+            reactionProgress += increaseAmount;
+
+            // Ограничение прогресса от 0 до 100
+            if (reactionProgress > 100) {
+                reactionProgress = 100;
+                endSession();
+            } else if (reactionProgress < 0) {
+                reactionProgress = 0; // Не позволяем прогрессу уходить ниже 0
+            }
+            
+            // Обновление ширины полосы
+            reactionBar.style.height = `${reactionProgress}%`;
+        }
+
+        function decreaseReactionProgress() {
+            updateReactionProgress(progressDecreaseStep); // Уменьшаем прогресс
+        }
+
+        function createExplosion(position) {
+            const explosion = new THREE.Mesh(
+                new THREE.SphereGeometry(0.01, 32, 32),
+                new THREE.MeshBasicMaterial({ color: 0xfffff0, transparent: true, opacity: 0.3 })
+            );
+            explosion.position.copy(position);
+            scene.add(explosion);
+
+
+            // Начальный и конечный масштаб
+            const initialScale = 1;
+            const targetScale = 20; // Конечный размер взрыва
+            const duration = 200; // Длительность анимации взрыва (в мс)
+            
+            const startTime = performance.now();
+
+            function animateExplosion() {
+                const elapsed = performance.now() - startTime;
+                const t = Math.min(elapsed / duration, 1); // t ограничиваем между 0 и 1
+
+                // Линейная интерполяция от начального до целевого масштаба
+                const scaleValue = THREE.MathUtils.lerp(initialScale, targetScale, t);
+                explosion.scale.set(scaleValue, scaleValue, scaleValue);
+
+                if (t < 1) {
+                    requestAnimationFrame(animateExplosion); // Продолжаем анимацию
+                } else {
+                    scene.remove(explosion); // Удаляем взрыв после окончания анимации
+                }
+            }
+
+            requestAnimationFrame(animateExplosion); // Запускаем анимацию
+        }
+
+        function createConfetti(position, direction) {
+            const confettiCount = 50; // Количество конфетти
+            for (let i = 0; i < confettiCount; i++) {
+                const confetti = new THREE.Mesh(
+                    new THREE.PlaneGeometry(0.02, 0.02),
+                    new THREE.MeshBasicMaterial({ color: Math.random() < 0.5 ? 0xff0000 : 0x0000ff, side: THREE.DoubleSide }) // Красный или синий
+                );
+
+                // Устанавливаем начальную позицию в точке взрыва
+                confetti.position.copy(position);
+
+                // Устанавливаем случайное направление для разлета конфетти, используя направление пули
+                const randomOffset = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.5, // Случайный смещение по X
+                    (Math.random() - 0.5) * 0.5, // Случайный смещение по Y
+                    (Math.random() - 0.5) * 0.5  // Случайный смещение по Z
+                );
+
+                // Смешиваем направление пули и случайное смещение
+                const confettiDirection = direction.clone().add(randomOffset).normalize(); // Нормализуем
+
+                // Устанавливаем скорость
+                const speed = 0.1 + Math.random() * 0.1; // Случайная скорость
+
+                scene.add(confetti);
+
+                animateConfetti(confetti, confettiDirection, speed);
+            }
+        }
+
+        function animateConfetti(confetti, direction) {
+            const duration = 2000; // Длительность анимации в мс
+            const startTime = performance.now();
+
+            function moveConfetti() {
+                const elapsed = performance.now() - startTime;
+                const t = elapsed / duration;
+
+                confetti.position.add(direction); // Обновляем позицию конфетти
+
+                // Удаляем конфетти после анимации
+                if (t < 1) {
+                    requestAnimationFrame(moveConfetti);
+                } else {
+                    scene.remove(confetti);
+                }
+            }
+
+            requestAnimationFrame(moveConfetti);
+        }
+
+        // Функция для увеличения глобального счёта и сохранения его в LocalStorage
+        function addScore(points) {
+            let globalScore = localStorage.getItem('globalScore') || 0;
+            globalScore = parseInt(globalScore) + points;
+            localStorage.setItem('globalScore', globalScore);
+            document.getElementById('globalScore').textContent = globalScore;
+        }
+
+        function render(timestamp, frame) {
+            if (frame) {
+                const referenceSpace = renderer.xr.getReferenceSpace();
+                const session = renderer.xr.getSession();
+
+                if (session && session.requestHitTest) {
+                    session.requestHitTest(new XRRay(camera.position, camera.getWorldDirection(new THREE.Vector3())), referenceSpace)
+                        .then((results) => {
+                            if (results.length) {
+                                const hitPose = results[0].getPose(referenceSpace);
+                                reticle.visible = true;
+                                reticle.matrix.fromArray(hitPose.transform.matrix);
+                            } else {
+                                reticle.visible = false;
+                            }
+                        });
+                }
+                updateGeigerCounterArrow(); // Обновление положения и анимации стрелочки
+            }
+
+            updateBullets();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

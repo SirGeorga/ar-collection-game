@@ -96,13 +96,13 @@
             scene.add(light);
 
             const button = document.createElement('button');
-            button.id = 'arButton';
+            button.id = 'finishButton';
             button.textContent = 'Завершить квест';
             button.className = 'button';
             button.style.cssText = 'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none;';
             document.body.appendChild(button);
 
-            document.getElementById('arButton').addEventListener('click', endSession);
+            document.getElementById('finishButton').addEventListener('click', endSession);
             document.getElementById('startButton').addEventListener('click', startARSession);
 
             // Загрузка GLB модели
@@ -151,7 +151,7 @@
             renderer.setAnimationLoop(render);
             document.getElementById('counterPanel').style.display = 'block';
             document.getElementById('startScreen').style.display = 'none';
-            document.getElementById('arButton').style.display = 'block';
+            document.getElementById('finishButton').style.display = 'block';
         }
 
         function endSession() {
@@ -169,7 +169,7 @@
             objects = [];
             document.getElementById('startScreen').style.display = 'flex';
             document.getElementById('counterPanel').style.display = 'none';
-            document.getElementById('arButton').style.display = 'none';
+            document.getElementById('finishButton').style.display = 'none';
             alert(`Квест завершен! Вы собрали ${score} PolyCoins.`);
             addScore(score)
         }
