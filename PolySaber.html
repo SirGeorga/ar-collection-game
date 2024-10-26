@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Quest Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #startScreen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;    
+            max-height: 100%; /* Limit height to viewport */
+            overflow-y: auto; /* Enable vertical scrolling */
+            background-image: url('./sources/BACKGROUND.jpg');
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+
+        .startButton {
+            margin: 15px 0; padding: 15px 30px; font-size: 24px; cursor: pointer;
+            background-color: rgb(76, 175, 80); color: white; border: none; border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .startButton:hover {
+            background-color: #45a049;
+        }
+        .back-button {
+            margin: 15px 0; padding: 15px 30px; font-size: 24px; cursor: pointer;
+            background-color: rgb(19, 117, 22);; color: white; border: none; border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        #scorePanel {
+            position: fixed; top: 20px; left: 20px; z-index: 1500;
+            left: 50%;
+            transform: translate(-50% );
+            display: flex; align-items: center;
+            background: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+        }
+        #score {
+            color: rgb(76, 194, 76);
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Лёгкая тень */
+        }
+
+        #infoPanel {
+            display: flex; align-items: center;
+            background: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+            padding: 50px 50px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        #infoText {
+            color: white; /* Цвет "золотой" */
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Лёгкая тень */
+            text-align: center;
+        }        
+
+
+
+        #endButton {
+            position: fixed;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            font-size: 18px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #finalScore {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 24px;
+            display: none;
+            text-align: center;
+        }
+        #boundaryWarning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 0, 0, 0);
+            pointer-events: none;
+            display: none;
+            z-index: 99;
+            transition: background-color 0.5s ease;
+        }
+        #warningMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 24px;
+            display: none;
+            text-align: center;
+            z-index: 100;
+        }
+
+        #errorMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+            z-index: 1100;
+        }
+    </style>
+</head>
+<body>
+    <div id="errorMessage"></div>
+    <div id="startScreen">
+        <h1 style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); text-align: center;">Квест "PolySaber!"</h1>
+        <div id="infoPanel">
+            <div id="infoText">Доводилось играть в BeatSaber? Вот, почти то же самое, только нужно ловить PolyCoins не выходя из игровой зоны. И без музыки... Дерзай! </div>
+        </div>
+        <button id="startButton" class="startButton">НАЧАТЬ КВЕСТ</button>
+        <button id="backButton" class="back-button" onclick="window.location.href='quests.html'">НАЗАД</button>
+    </div>
+
+    <div id="scorePanel" style="display: none;">
+        <div id="score">Счёт: 0</div>
+    </div>
+    <div id="finalScore"></div>
+    <div id="boundaryWarning"></div>
+    <div id="warningMessage">Пожалуйста, вернитесь в игровую зону!</div>
+
+    <button id="endButton">Завершить квест</button>
+
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.132.0/build/three.module.js';
+        //import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.132.0/examples/js/loaders/GLTFLoader.js';
+
+        let camera, scene, renderer;
+        let playArea;
+        let score = 0;
+        let objects = [];
+        let currentSession = null;
+        let isOutOfBounds = false;
+        let spawnInterval;
+        let modelTemplate; // Хранит загруженную модель для клонирования
+        const spawnPoint = new THREE.Vector3(0, 0, -2);
+        const PLAY_AREA_RADIUS = 1; // Радиус игровой зоны
+        const WARNING_START_DISTANCE = 0.8; // Начать предупреждение на 80% от радиуса
+        
+        init();
+
+        async function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+            scene.add(light);
+
+            const circleGeometry = new THREE.CircleGeometry(PLAY_AREA_RADIUS, 32);
+            const circleMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ff00,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.DoubleSide
+            });
+            playArea = new THREE.Mesh(circleGeometry, circleMaterial);
+            playArea.rotation.x = -Math.PI / 2;
+            playArea.position.y = -1.5;
+            scene.add(playArea);
+/*
+            // Загружаем 3D модель
+            const loader = new GLTFLoader();
+            try {
+                const gltf = await loader.loadAsync('./models/coin_tpu.glb'); // Путь к вашей модели
+                modelTemplate = gltf.scene;
+                // Устанавливаем начальный масштаб модели
+                modelTemplate.scale.set(0.1, 0.1, 0.1); // Подберите подходящий масштаб
+                // Центрируем модель
+                const box = new THREE.Box3().setFromObject(modelTemplate);
+                const center = box.getCenter(new THREE.Vector3());
+                modelTemplate.position.sub(center);
+            } catch (error) {
+                showError(error);
+                console.error('Ошибка загрузки модели:', error);
+            }*/
+
+            document.getElementById('startButton').addEventListener('click', onStartARClick);
+            document.getElementById('endButton').addEventListener('click', endSession);
+
+            renderer.setAnimationLoop(render);
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 3000);
+        }
+
+        function checkBoundary() {
+            const cameraPosition = new THREE.Vector2(camera.position.x, camera.position.z);
+            const areaPosition = new THREE.Vector2(playArea.position.x, playArea.position.z);
+            const distance = cameraPosition.distanceTo(areaPosition);
+            
+            const warningElement = document.getElementById('boundaryWarning');
+            const messageElement = document.getElementById('warningMessage');
+            
+            // Рассчитываем прозрачность предупреждения
+            if (distance > WARNING_START_DISTANCE * PLAY_AREA_RADIUS) {
+                const opacity = Math.min((distance - WARNING_START_DISTANCE * PLAY_AREA_RADIUS) / 
+                    (PLAY_AREA_RADIUS - WARNING_START_DISTANCE * PLAY_AREA_RADIUS), 0.5);
+                
+                warningElement.style.display = 'block';
+                warningElement.style.backgroundColor = `rgba(255, 0, 0, ${opacity})`;
+                
+                // Если полностью вышли за пределы
+                if (distance > PLAY_AREA_RADIUS && !isOutOfBounds) {
+                    isOutOfBounds = true;
+                    messageElement.style.display = 'block';
+                    if (spawnInterval) {
+                        clearInterval(spawnInterval);
+                        spawnInterval = null;
+                    }
+                }
+            } else {
+                warningElement.style.display = 'none';
+                messageElement.style.display = 'none';
+                
+                // Если вернулись в зону
+                if (isOutOfBounds) {
+                    isOutOfBounds = false;
+                    if (currentSession && !spawnInterval) {
+                        spawnInterval = setInterval(spawnObject, 2000);
+                    }
+                }
+            }
+        }
+
+        function onStartARClick() {
+            if (navigator.xr) {
+                navigator.xr.isSessionSupported('immersive-ar')
+                    .then((supported) => {
+                        if (supported) {
+                            navigator.xr.requestSession('immersive-ar', {
+                                requiredFeatures: ['hit-test'],
+                                optionalFeatures: ['dom-overlay'],
+                                domOverlay: { root: document.body }
+                            }).then(onSessionStarted);
+                        }
+                    });
+            }
+        }
+
+        function onSessionStarted(session) {
+            currentSession = session;
+            renderer.xr.setReferenceSpaceType('local');
+            renderer.xr.setSession(session);
+
+            session.addEventListener('end', onSessionEnded);
+
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('scorePanel').style.display = 'block';
+            document.getElementById('endButton').style.display = 'block';
+            document.getElementById('startButton').style.display = 'none';
+
+            spawnInterval = setInterval(spawnObject, 2000);
+        }
+
+        function endSession() {
+            if (currentSession) {
+                if (spawnInterval) {
+                    clearInterval(spawnInterval);
+                    spawnInterval = null;
+                }
+                document.getElementById('finalScore').textContent = `Собрано PolyCoins: ${score}`;
+                document.getElementById('finalScore').style.display = 'block';
+                document.getElementById('boundaryWarning').style.display = 'none';
+                document.getElementById('warningMessage').style.display = 'none';
+                
+                setTimeout(() => {
+                    currentSession.end();
+                    window.location.href='quests.html'
+                }, 2000);
+            }
+        }
+
+        function onSessionEnded() {
+            currentSession = null;
+            isOutOfBounds = false;
+            
+            if (spawnInterval) {
+                clearInterval(spawnInterval);
+                spawnInterval = null;
+            }
+            
+            objects.forEach(obj => scene.remove(obj));
+            objects = [];
+            score = 0;
+            updateScore();
+
+            document.getElementById('scorePanel').style.display = 'none';
+            document.getElementById('endButton').style.display = 'none';
+            document.getElementById('startButton').style.display = 'block';
+            document.getElementById('boundaryWarning').style.display = 'none';
+            document.getElementById('warningMessage').style.display = 'none';
+            
+            setTimeout(() => {
+                document.getElementById('finalScore').style.display = 'none';
+            }, 2000);
+        }
+
+        /*
+        function spawnObject() {
+            if (!modelTemplate) return; // Проверяем, загружена ли модель
+
+            const object = modelTemplate.clone(); // Клонируем модель
+            
+            object.position.copy(spawnPoint);
+            
+            const angle = (Math.random() - 0.5) * Math.PI / 2;
+            object.userData.velocity = new THREE.Vector3(
+                Math.sin(angle) * 0.01,
+                (Math.random() - 0.5) * 0.01,
+                0.02
+            );
+            
+            // Добавляем случайную начальную ротацию
+            object.rotation.y = Math.random() * Math.PI * 2;
+            
+            // Добавляем скорость вращения
+            object.userData.rotationSpeed = 0.02 + Math.random() * 0.03;
+            
+            scene.add(object);
+            objects.push(object);
+        }
+
+        function updateObjects() {
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const object = objects[i];
+                object.position.add(object.userData.velocity);
+                
+                // Вращаем объект
+                object.rotation.y += object.userData.rotationSpeed;
+                
+                if (object.position.distanceTo(camera.position) < 0.2) {
+                    scene.remove(object);
+                    objects.splice(i, 1);
+                    score += 1;
+                    continue;
+                }
+                
+                if (object.position.z > camera.position.z + 1) {
+                    scene.remove(object);
+                    objects.splice(i, 1);
+                    score -= 1;
+                }                
+                updateScore();
+            }
+        }
+        */
+        function spawnObject() {
+            const primitives = [
+                new THREE.BoxGeometry(0.1, 0.1, 0.1),
+                new THREE.SphereGeometry(0.05, 8, 8),
+                new THREE.ConeGeometry(0.05, 0.1, 8)
+            ];
+            const geometry = primitives[Math.floor(Math.random() * primitives.length)];
+            
+            const material = new THREE.MeshPhongMaterial({
+                color: Math.random() * 0xffffff
+            });
+            
+            const object = new THREE.Mesh(geometry, material);
+            
+            object.position.copy(spawnPoint);
+            
+            const angle = (Math.random() - 0.5) * Math.PI / 2;
+            object.userData.velocity = new THREE.Vector3(
+                Math.sin(angle) * 0.01,
+                (Math.random() - 0.5) * 0.01,
+                0.02
+            );
+            
+            scene.add(object);
+            objects.push(object);
+        }
+
+        function updateObjects() {
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const object = objects[i];
+                object.position.add(object.userData.velocity);
+                
+                if (object.position.distanceTo(camera.position) < 0.2) {
+                    scene.remove(object);
+                    objects.splice(i, 1);
+                    score += 1;
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200);
+                    }
+                    continue;
+                }
+                
+                if (object.position.z > camera.position.z + 1) {
+                    scene.remove(object);
+                    objects.splice(i, 1);
+                    score -= 1;
+                }                
+                updateScore();
+            }
+        }
+        
+
+        function updateScore() {
+            document.getElementById('score').textContent = `Счёт: ${score}`;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function render() {
+            checkBoundary();
+            updateObjects();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
