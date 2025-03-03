@@ -190,9 +190,9 @@
                 description: "Старейший университет в Сибири, основан в 1878 году.",
                 primitive: "box",
                 color: "#4285F4",
-                latitude: 56.45626892405372,  // Координаты 10ки
-                longitude: 84.95068666276242,
-                scale: "3 3 3",
+                latitude: 56.45832,  // Координаты 10ки
+                longitude: 84.94800,
+                scale: "1 1 1",
                 rotation: "0 45 0",
                 collectionMessage: "Вы собрали элемент Томского государственного университета!",
                 collected: false
@@ -218,8 +218,10 @@
                 description: "Знаменитый памятник работы скульптора Леонтия Усова.",
                 primitive: "cylinder",
                 color: "#DB4437",
-                latitude: 56.48436,  // Координаты памятника Чехову
-                longitude: 84.94749,
+                latitude: 56.45832,  // Координаты 10ки
+                longitude: 84.94766,
+              //  latitude: 56.48436,  // Координаты памятника Чехову
+              //  longitude: 84.94749,
                 scale: "0.8 1.5 0.8",
                 rotation: "0 0 0",
                 collectionMessage: "Вы открыли памятник Чехову!",
@@ -327,8 +329,50 @@
                     // Update coordinates display
                     updateCoordinatesDisplay(latitude, longitude);
                     
-                    // Check proximity for collection
-                    checkProximity(latitude, longitude);
+                    // Check each model
+                    arModels.forEach(model => {
+                        if (!model.collected) {
+                            // Calculate distance between user and model
+                            const distance = calculateDistance(
+                                latitude, longitude,
+                                model.latitude, model.longitude
+                            );
+                            
+                            // If user is within collection range, position object in front
+                            const modelEntity = document.querySelector(`[data-model-id="${model.id}"]`);
+                            if (modelEntity) {
+                                if (distance < 50) { // 50m range to see objects
+                                    // Calculate direction to actual location
+                                    const bearing = calculateBearing(
+                                        latitude, longitude,
+                                        model.latitude, model.longitude
+                                    );
+                                    
+                                    // Make visible and position at fixed distance in correct direction
+                                    modelEntity.setAttribute('visible', true);
+                                    
+                                    // For closest objects (under 15m), enable collection
+                                    if (distance < 15) {
+                                        // Position object 3 meters in front of user in the right direction
+                                        positionObjectRelativeToUser(modelEntity, 3, bearing);
+                                        
+                                        // Allow collection by proximity
+                                        if (!model.collected) {
+                                            if (distance < 5) { // When very close, auto collect
+                                                collectModel(model.id);
+                                            }
+                                        }
+                                    } else {
+                                        // Position farther objects at a static distance (10m) in the right direction
+                                        positionObjectRelativeToUser(modelEntity, 10, bearing);
+                                    }
+                                } else {
+                                    // Hide if too far away
+                                    modelEntity.setAttribute('visible', false);
+                                }
+                            }
+                        }
+                    });
                 }, err => {
                     console.error('Error getting location:', err);
                     alert('Пожалуйста, включите определение местоположения для игры в AR-квест.');
@@ -357,6 +401,35 @@
                 });
             }
         });
+
+
+        // Add this function to calculate bearing between two points
+        function calculateBearing(lat1, lon1, lat2, lon2) {
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+
+            const y = Math.sin(Δλ) * Math.cos(φ2);
+            const x = Math.cos(φ1) * Math.sin(φ2) -
+                    Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+            
+            const θ = Math.atan2(y, x);
+            return (θ * 180/Math.PI + 360) % 360; // in degrees
+        }
+
+        // Add this function to position objects relative to user
+        function positionObjectRelativeToUser(entity, distance, bearing) {
+            // Convert bearing to radians
+            const bearingRad = bearing * Math.PI / 180;
+            
+            // Set position relative to camera
+            const xPosition = distance * Math.sin(bearingRad);
+            const zPosition = -distance * Math.cos(bearingRad);
+            
+            // Use local positioning instead of GPS
+            entity.removeAttribute('gps-entity-place');
+            entity.setAttribute('position', `${xPosition} 0 ${zPosition}`);
+        }
         
         function updateAccuracyDisplay(accuracy) {
             const accuracyElement = document.getElementById('accuracy-value');
