@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tomsk AR Quest</title>
+    <!-- A-Frame for WebAR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
+    <!-- AR.js for location-based AR -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        #ui-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 10px;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+        
+        .collection-counter {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+            pointer-events: auto;
+            margin-bottom: 8px;
+        }
+        
+        .accuracy-display {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            display: block;
+            pointer-events: auto;
+            font-size: 14px;
+        }
+        
+        .accuracy-good {
+            color: #4caf50;
+        }
+        
+        .accuracy-medium {
+            color: #ff9800;
+        }
+        
+        .accuracy-poor {
+            color: #f44336;
+        }
+        
+        #notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 2000;
+            display: none;
+        }
+        
+        #collection-view {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            text-align: center;
+            line-height: 60px;
+            font-size: 30px;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #collection-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            background-color: white;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            z-index: 3000;
+            overflow-y: auto;
+            display: none;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .model-item {
+            display: inline-block;
+            width: 100px;
+            height: 150px;
+            margin: 10px;
+            text-align: center;
+        }
+        
+        .model-preview {
+            width: 100px;
+            height: 100px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .coordinates-display {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            display: block;
+            pointer-events: auto;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui-container">
+        <div class="collection-counter">
+            Собрано объектов: <span id="collected-count">0</span> / <span id="total-count">0</span>
+        </div>
+        <div class="accuracy-display">
+            Точность позиционирования: <span id="accuracy-value">Ожидание GPS...</span>
+        </div>
+        <div class="coordinates-display">
+            Координаты: <span id="current-coordinates">Ожидание GPS...</span>
+        </div>
+    </div>
+    
+    <div id="notification">
+        <h3>Объект найден!</h3>
+        <p id="notification-text">Вы нашли новый объект!</p>
+    </div>
+    
+    <div id="collection-view">👜</div>
+    
+    <div id="collection-panel">
+        <div class="close-panel">×</div>
+        <h2>Ваша коллекция</h2>
+        <div id="collection-items"></div>
+    </div>
+    
+    <a-scene 
+        vr-mode-ui="enabled: false"
+        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;"
+        renderer="logarithmicDepthBuffer: true;">
+        
+        <!-- Camera -->
+        <a-camera gps-camera rotation-reader></a-camera>
+        
+        <!-- AR models will be added here dynamically -->
+    </a-scene>
+    
+    <script>
+        // Define Tomsk model locations with geometric primitives
+        const arModels = [
+
+        {
+                id: 1,
+                name: "Томский Политехнический университет",
+                description: "Старейший университет в Сибири, основан в 1878 году.",
+                primitive: "box",
+                color: "#4285F4",
+                latitude: 56.45626892405372,  // Координаты 10ки
+                longitude: 84.95068666276242,
+                scale: "3 3 3",
+                rotation: "0 45 0",
+                collectionMessage: "Вы собрали элемент Томского государственного университета!",
+                collected: false
+            }
+        /*
+            {
+                id: 1,
+                name: "Томский государственный университет",
+                description: "Старейший университет в Сибири, основан в 1878 году.",
+                primitive: "box",
+                color: "#4285F4",
+                latitude: 56.47421,  // Координаты ТГУ
+                longitude: 84.95081,
+                scale: "1 1 1",
+                rotation: "0 45 0",
+                collectionMessage: "Вы собрали элемент Томского государственного университета!",
+                collected: false
+            }*/
+            ,
+            {
+                id: 2,
+                name: "Памятник Чехову",
+                description: "Знаменитый памятник работы скульптора Леонтия Усова.",
+                primitive: "cylinder",
+                color: "#DB4437",
+                latitude: 56.48436,  // Координаты памятника Чехову
+                longitude: 84.94749,
+                scale: "0.8 1.5 0.8",
+                rotation: "0 0 0",
+                collectionMessage: "Вы открыли памятник Чехову!",
+                collected: false
+            },
+            {
+                id: 3,
+                name: "Деревянный дом с наличниками",
+                description: "Один из знаменитых деревянных домов Томска.",
+                primitive: "cone",
+                color: "#F4B400",
+                latitude: 56.48227,  // Координаты деревянного дома (пример)
+                longitude: 84.95101,
+                scale: "1 1 1",
+                rotation: "0 0 0",
+                collectionMessage: "Деревянный дом теперь в вашей коллекции!",
+                collected: false
+            },
+            {
+                id: 4,
+                name: "Лагерный сад",
+                description: "Красивый парк с видом на реку Томь.",
+                primitive: "sphere",
+                color: "#0F9D58",
+                latitude: 56.45452,  // Координаты Лагерного сада
+                longitude: 84.95146,
+                scale: "1 1 1",
+                rotation: "0 0 0",
+                collectionMessage: "Вы добавили Лагерный сад в свою коллекцию!",
+                collected: false
+            },
+            {
+                id: 5,
+                name: "Новособорная площадь",
+                description: "Центральная площадь Томска.",
+                primitive: "tetrahedron",
+                color: "#9C27B0",
+                latitude: 56.47654,  // Координаты Новособорной площади
+                longitude: 84.95077,
+                scale: "1 1 1",
+                rotation: "0 45 0",
+                collectionMessage: "Вы собрали элемент Новособорной площади!",
+                collected: false
+            }
+        ];
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set total model count
+            document.getElementById('total-count').textContent = arModels.length;
+            
+            // Create AR entities for each model
+            const scene = document.querySelector('a-scene');
+            
+            arModels.forEach(modelData => {
+                // Create primitive entity
+                const entity = document.createElement('a-entity');
+                entity.setAttribute('gps-entity-place', `latitude: ${modelData.latitude}; longitude: ${modelData.longitude}`);
+                entity.setAttribute('data-model-id', modelData.id);
+                
+                // Create the primitive
+                let primitive;
+                
+                if (modelData.primitive === "tetrahedron") {
+                    // Custom tetrahedron (using an entity with a special geometry)
+                    primitive = document.createElement('a-entity');
+                    primitive.setAttribute('geometry', 'primitive: tetrahedron');
+                } else {
+                    // Standard A-Frame primitives
+                    primitive = document.createElement(`a-${modelData.primitive}`);
+                }
+                
+                // Set properties based on primitive type
+                primitive.setAttribute('color', modelData.color);
+                
+                // Set scale and animation
+                entity.setAttribute('scale', modelData.scale);
+                entity.setAttribute('rotation', modelData.rotation);
+                entity.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 15000; easing: linear');
+                
+                // Add collection event
+                entity.addEventListener('click', () => {
+                    collectModel(modelData.id);
+                });
+                
+                // Make primitive semi-transparent
+                primitive.setAttribute('opacity', '0.7');
+                
+                // Add primitive to entity
+                entity.appendChild(primitive);
+                
+                // Add entity to scene
+                scene.appendChild(entity);
+            });
+            
+            // Initialize user location monitoring
+            if ('geolocation' in navigator) {
+                navigator.geolocation.watchPosition(position => {
+                    const accuracy = position.coords.accuracy;
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    
+                    // Update accuracy display
+                    updateAccuracyDisplay(accuracy);
+                    
+                    // Update coordinates display
+                    updateCoordinatesDisplay(latitude, longitude);
+                    
+                    // Check proximity for collection
+                    checkProximity(latitude, longitude);
+                }, err => {
+                    console.error('Error getting location:', err);
+                    alert('Пожалуйста, включите определение местоположения для игры в AR-квест.');
+                }, {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 27000
+                });
+            }
+            
+            // Collection panel toggle
+            document.getElementById('collection-view').addEventListener('click', toggleCollectionPanel);
+            document.querySelector('.close-panel').addEventListener('click', toggleCollectionPanel);
+            
+            // Load collection from localStorage if available
+            loadCollection();
+            
+            // Add custom tetrahedron geometry
+            if (!AFRAME.geometries.tetrahedron) {
+                AFRAME.registerGeometry('tetrahedron', {
+                    init: function () {
+                        var data = this.data;
+                        var geometry = new THREE.TetrahedronGeometry(1, 0);
+                        this.geometry = geometry;
+                    }
+                });
+            }
+        });
+        
+        function updateAccuracyDisplay(accuracy) {
+            const accuracyElement = document.getElementById('accuracy-value');
+            
+            // Remove any existing classes
+            accuracyElement.classList.remove('accuracy-good', 'accuracy-medium', 'accuracy-poor');
+            
+            // Add appropriate class and text based on accuracy
+            if (accuracy <= 5) {
+                accuracyElement.textContent = `${accuracy.toFixed(1)} м (Отличная)`;
+                accuracyElement.classList.add('accuracy-good');
+            } else if (accuracy <= 15) {
+                accuracyElement.textContent = `${accuracy.toFixed(1)} м (Средняя)`;
+                accuracyElement.classList.add('accuracy-medium');
+            } else {
+                accuracyElement.textContent = `${accuracy.toFixed(1)} м (Низкая)`;
+                accuracyElement.classList.add('accuracy-poor');
+            }
+        }
+        
+        function updateCoordinatesDisplay(latitude, longitude) {
+            const coordsElement = document.getElementById('current-coordinates');
+            coordsElement.textContent = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+        }
+        
+        function checkProximity(userLat, userLong) {
+            arModels.forEach(model => {
+                if (!model.collected) {
+                    // Calculate distance between user and model (Haversine formula)
+                    const distance = calculateDistance(
+                        userLat, userLong,
+                        model.latitude, model.longitude
+                    );
+                    
+                    // If user is within 15 meters of a model, collect it
+                    if (distance < 15) {
+                        collectModel(model.id);
+                    }
+                }
+            });
+        }
+        
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Earth radius in meters
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+            
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            
+            return R * c; // Distance in meters
+        }
+        
+        function collectModel(modelId) {
+            const modelIndex = arModels.findIndex(model => model.id === modelId);
+            
+            if (modelIndex !== -1 && !arModels[modelIndex].collected) {
+                // Mark as collected
+                arModels[modelIndex].collected = true;
+                
+                // Update UI counter
+                const collectedCount = arModels.filter(model => model.collected).length;
+                document.getElementById('collected-count').textContent = collectedCount;
+                
+                // Show notification
+                const notification = document.getElementById('notification');
+                document.getElementById('notification-text').textContent = arModels[modelIndex].collectionMessage;
+                notification.style.display = 'block';
+                
+                // Hide notification after 3 seconds
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 3000);
+                
+                // Update collection panel
+                updateCollectionPanel();
+                
+                // Save to localStorage
+                saveCollection();
+            }
+        }
+        
+        function toggleCollectionPanel() {
+            const panel = document.getElementById('collection-panel');
+            panel.style.display = panel.style.display === 'none' || panel.style.display === '' ? 'block' : 'none';
+        }
+        
+        function updateCollectionPanel() {
+            const container = document.getElementById('collection-items');
+            container.innerHTML = '';
+            
+            arModels.forEach(model => {
+                if (model.collected) {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'model-item';
+                    
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'model-preview';
+                    previewDiv.style.backgroundColor = model.color;
+                    previewDiv.textContent = model.name.substring(0, 1);
+                    
+                    const nameP = document.createElement('p');
+                    nameP.textContent = model.name;
+                    
+                    itemDiv.appendChild(previewDiv);
+                    itemDiv.appendChild(nameP);
+                    container.appendChild(itemDiv);
+                }
+            });
+        }
+        
+        function saveCollection() {
+            // Save collected models to localStorage
+            const collectedIds = arModels
+                .filter(model => model.collected)
+                .map(model => model.id);
+            
+            localStorage.setItem('tomskARCollection', JSON.stringify(collectedIds));
+        }
+        
+        function loadCollection() {
+            // Load collection from localStorage
+            const savedCollection = localStorage.getItem('tomskARCollection');
+            
+            if (savedCollection) {
+                const collectedIds = JSON.parse(savedCollection);
+                
+                collectedIds.forEach(id => {
+                    const modelIndex = arModels.findIndex(model => model.id === id);
+                    if (modelIndex !== -1) {
+                        arModels[modelIndex].collected = true;
+                    }
+                });
+                
+                // Update UI
+                document.getElementById('collected-count').textContent = 
+                    arModels.filter(model => model.collected).length;
+                
+                updateCollectionPanel();
+            }
+        }
+    </script>
+</body>
+</html>
